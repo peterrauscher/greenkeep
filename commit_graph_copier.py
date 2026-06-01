@@ -26,6 +26,8 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 """
 
 MAX_SECONDS_OFFSET_IN_DAY = 86399
+MIDDAY_SECONDS = 12 * 60 * 60
+MARKER_FILE_NAME = ".commit_graph_copier"
 
 
 def run(
@@ -43,7 +45,7 @@ def require_gh_auth() -> None:
         raise SystemExit("GitHub CLI is not authenticated. Run: gh auth login")
 
 
-def fetch_daily_counts(source_user: str, start_date: dt.date, end_date: dt.date) -> dict[str, int]:
+def fetch_contribution_counts_by_date(source_user: str, start_date: dt.date, end_date: dt.date) -> dict[str, int]:
     variables = {
         "login": source_user,
         "from": f"{start_date.isoformat()}T00:00:00Z",
@@ -63,7 +65,7 @@ def fetch_daily_counts(source_user: str, start_date: dt.date, end_date: dt.date)
     payload = json.loads(response.stdout)
     errors = payload.get("errors")
     if errors:
-        message = errors[0].get("message", "Unknown GitHub GraphQL error")
+        message = errors[0].get("message", "Unknown GitHub GraphQL error; check gh auth status and network access")
         raise SystemExit(f"GitHub GraphQL query failed: {message}")
 
     user = payload.get("data", {}).get("user")
@@ -84,7 +86,7 @@ def ensure_git_repo(repo_path: Path) -> None:
 def ensure_clean_worktree(repo_path: Path) -> None:
     status = run(["git", "status", "--porcelain"], cwd=repo_path)
     if status.stdout.strip():
-        raise SystemExit("Working tree is not clean. Commit or stash changes, or use --allow-dirty.")
+        raise SystemExit("Repository has uncommitted changes. Commit or stash them, or use --allow-dirty.")
 
 
 def create_mock_commits(
@@ -93,7 +95,7 @@ def create_mock_commits(
     max_commits_per_day: int | None,
     dry_run: bool,
 ) -> int:
-    marker_path = repo_path / ".commit-graph-copier"
+    marker_path = repo_path / MARKER_FILE_NAME
     created = 0
     for date_str in sorted(counts.keys()):
         count = counts[date_str]
@@ -104,7 +106,7 @@ def create_mock_commits(
 
         for i in range(1, count + 1):
             if count == 1:
-                seconds_offset = 12 * 60 * 60
+                seconds_offset = MIDDAY_SECONDS
             else:
                 seconds_offset = int(((i - 1) * MAX_SECONDS_OFFSET_IN_DAY) / (count - 1))
             hour = seconds_offset // 3600
@@ -178,14 +180,14 @@ def main() -> int:
     start_date = dt.date.fromisoformat(args.start_date)
     end_date = dt.date.fromisoformat(args.end_date)
     if end_date < start_date:
-        raise SystemExit("--end-date must be the same or after --start-date")
+        raise SystemExit("--end-date must be on or after --start-date")
 
     require_gh_auth()
     ensure_git_repo(repo_path)
     if not args.allow_dirty:
         ensure_clean_worktree(repo_path)
 
-    counts = fetch_daily_counts(args.source_user, start_date, end_date)
+    counts = fetch_contribution_counts_by_date(args.source_user, start_date, end_date)
     created = create_mock_commits(repo_path, counts, args.max_commits_per_day, args.dry_run)
     print(f"Created {created} mock commits.")
     if not args.dry_run:
