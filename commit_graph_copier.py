@@ -26,8 +26,13 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 """
 
 
-def run(command: list[str], cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(command, cwd=cwd, check=check, text=True, capture_output=True)
+def run(
+    command: list[str],
+    cwd: Path | None = None,
+    check: bool = True,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess:
+    return subprocess.run(command, cwd=cwd, check=check, text=True, capture_output=True, env=env)
 
 
 def require_gh_auth() -> None:
@@ -107,7 +112,7 @@ def create_mock_commits(
                 "GIT_AUTHOR_DATE": timestamp,
                 "GIT_COMMITTER_DATE": timestamp,
             }
-            subprocess.run(["git", "commit", "-m", message], cwd=repo_path, check=True, env=env)
+            run(["git", "commit", "-m", message], cwd=repo_path, env=env)
             created += 1
 
     return created
