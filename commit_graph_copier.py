@@ -25,7 +25,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 }
 """
 
-SECONDS_IN_DAY_MINUS_ONE = 86399
+MAX_SECONDS_OFFSET_IN_DAY = 86399
 
 
 def run(
@@ -61,9 +61,14 @@ def fetch_daily_counts(source_user: str, start_date: dt.date, end_date: dt.date)
         ]
     )
     payload = json.loads(response.stdout)
+    errors = payload.get("errors")
+    if errors:
+        message = errors[0].get("message", "Unknown GitHub GraphQL error")
+        raise SystemExit(f"GitHub GraphQL query failed: {message}")
+
     user = payload.get("data", {}).get("user")
     if user is None:
-        raise SystemExit(f"Could not find GitHub user '{source_user}'.")
+        raise SystemExit(f"Could not resolve GitHub user '{source_user}' from GraphQL response.")
 
     days: dict[str, int] = {}
     for week in user["contributionsCollection"]["contributionCalendar"]["weeks"]:
@@ -101,7 +106,7 @@ def create_mock_commits(
             if count == 1:
                 seconds_offset = 12 * 60 * 60
             else:
-                seconds_offset = int(((i - 1) * SECONDS_IN_DAY_MINUS_ONE) / (count - 1))
+                seconds_offset = int(((i - 1) * MAX_SECONDS_OFFSET_IN_DAY) / (count - 1))
             hour = seconds_offset // 3600
             minute = (seconds_offset % 3600) // 60
             second = seconds_offset % 60
