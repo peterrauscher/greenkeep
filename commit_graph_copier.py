@@ -96,7 +96,14 @@ def create_mock_commits(
             continue
 
         for i in range(1, count + 1):
-            timestamp = f"{date_str}T12:{(i - 1) % 60:02d}:00"
+            if count == 1:
+                seconds_offset = 12 * 60 * 60
+            else:
+                seconds_offset = int(((i - 1) * 86399) / (count - 1))
+            hour = seconds_offset // 3600
+            minute = (seconds_offset % 3600) // 60
+            second = seconds_offset % 60
+            timestamp = f"{date_str}T{hour:02d}:{minute:02d}:{second:02d}"
             message = f"chore: mirror graph {date_str} ({i}/{count})"
             if dry_run:
                 print(f"[dry-run] {timestamp} {message}")
@@ -138,7 +145,12 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="End date in YYYY-MM-DD format",
     )
-    parser.add_argument("--max-commits-per-day", type=int, default=None)
+    parser.add_argument(
+        "--max-commits-per-day",
+        type=int,
+        default=None,
+        help="Cap the number of mirrored commits created for each day",
+    )
     parser.add_argument("--allow-dirty", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
