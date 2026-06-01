@@ -25,6 +25,8 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 }
 """
 
+SECONDS_IN_DAY_MINUS_ONE = 86399
+
 
 def run(
     command: list[str],
@@ -99,12 +101,12 @@ def create_mock_commits(
             if count == 1:
                 seconds_offset = 12 * 60 * 60
             else:
-                seconds_offset = int(((i - 1) * 86399) / (count - 1))
+                seconds_offset = int(((i - 1) * SECONDS_IN_DAY_MINUS_ONE) / (count - 1))
             hour = seconds_offset // 3600
             minute = (seconds_offset % 3600) // 60
             second = seconds_offset % 60
             timestamp = f"{date_str}T{hour:02d}:{minute:02d}:{second:02d}"
-            message = f"chore: mirror graph {date_str} ({i}/{count})"
+            message = f"mirror: graph {date_str} ({i}/{count})"
             if dry_run:
                 print(f"[dry-run] {timestamp} {message}")
                 created += 1
@@ -151,8 +153,16 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Cap the number of mirrored commits created for each day",
     )
-    parser.add_argument("--allow-dirty", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Allow running even when the repository has uncommitted changes",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show planned commits without creating any commits",
+    )
     return parser.parse_args()
 
 
