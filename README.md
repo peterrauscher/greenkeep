@@ -1,5 +1,7 @@
 # Graph Copier
 
+![Graph Copier](banner.jpg)
+
 Web app that copies GitHub contribution graphs from other accounts onto a private repo using backdated mock commits.
 
 This is the app successor to the original `commit-graph-copier` idea: paste source GitHub usernames, preview the merged graph, then write empty backdated commits to a private repo so GitHub paints the same squares on your profile.
