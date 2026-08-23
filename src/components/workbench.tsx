@@ -37,10 +37,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
-const TOKEN_KEY = "graph-copier-token";
-const PREFS_KEY = "graph-copier-prefs";
+const PREFS_KEY = "greenkeep-prefs";
+const DEFAULT_REPO = "greenkeep-commit-copies";
 const BATCH = 20;
 const MAX_SOURCES = 8;
+
+type PreviewView = "from" | "to" | "result";
 
 type Dest = {
   login: string;
@@ -58,17 +60,17 @@ type Prefs = {
 function loadPrefs(): Prefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return { repo: "graph-copy", intensity: "levels" };
+    if (!raw) return { repo: DEFAULT_REPO, intensity: "levels" };
     const parsed = JSON.parse(raw) as Partial<Prefs>;
     return {
-      repo: parsed.repo || "graph-copy",
+      repo: parsed.repo && parsed.repo !== "greenkeep" ? parsed.repo : DEFAULT_REPO,
       intensity:
         parsed.intensity === "days" || parsed.intensity === "counts"
           ? parsed.intensity
           : "levels",
     };
   } catch {
-    return { repo: "graph-copy", intensity: "levels" };
+    return { repo: DEFAULT_REPO, intensity: "levels" };
   }
 }
 
@@ -95,12 +97,11 @@ export function Workbench() {
   const [draftUser, setDraftUser] = useState("");
   const [sources, setSources] = useState<SourceCalendar[]>([]);
   const [loadingLogins, setLoadingLogins] = useState<string[]>([]);
-  const [token, setToken] = useState("");
-  const [tokenDraft, setTokenDraft] = useState("");
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
   const [dest, setDest] = useState<Dest | null>(null);
+  const [destCalendar, setDestCalendar] = useState<SourceCalendar | null>(null);
   const [destLoginDraft, setDestLoginDraft] = useState("");
-  const [repo, setRepo] = useState("graph-copy");
+  const [repo, setRepo] = useState(DEFAULT_REPO);
   const [email, setEmail] = useState("");
   const [intensity, setIntensity] = useState<IntensityMode>("levels");
   const [isPrivate, setIsPrivate] = useState(true);
@@ -112,15 +113,18 @@ export function Workbench() {
   const [writeTotal, setWriteTotal] = useState(0);
   const [repoUrl, setRepoUrl] = useState<string | null>(null);
   const abortRef = useRef(false);
+  const [previewView, setPreviewView] = useState<PreviewView>("result");
   const { user, isPending: authPending } = useCurrentUserState();
 
   useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_KEY) ?? "";
     const prefs = loadPrefs();
-    setToken(stored);
-    setTokenDraft(stored);
     setRepo(prefs.repo);
     setIntensity(prefs.intensity);
+    try {
+      localStorage.removeItem("graph-copier-token");
+    } catch {
+      /* storage unavailable */
+    }
   }, []);
 
   useEffect(() => {
@@ -130,27 +134,28 @@ export function Workbench() {
     );
   }, [repo, intensity]);
 
+  const userId = user?.id ?? null;
   useEffect(() => {
-    if (!token) {
+    if (!userId || user?.isDevFallback) {
       setDest(null);
       return;
     }
     let cancelled = false;
     setResolving(true);
-    resolveDestination({ data: { token } })
-      .then((user) => {
+    resolveDestination()
+      .then((githubUser) => {
         if (cancelled) return;
-        setDest(user);
-        setDestLoginDraft(user.login);
+        setDest(githubUser);
+        setDestLoginDraft(githubUser.login);
         setEmail(
-          user.email || `${user.login}@users.noreply.github.com`,
+          githubUser.email || `${githubUser.login}@users.noreply.github.com`,
         );
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         setDest(null);
         toast.error(
-          err instanceof Error ? err.message : "Could not read that token",
+          err instanceof Error ? err.message : "Could not read the GitHub account",
         );
       })
       .finally(() => {
@@ -159,16 +164,63 @@ export function Workbench() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [userId, user?.isDevFallback]);
 
-  const counts = useMemo(() => mergeCalendars(sources), [sources]);
+  const destLogin = dest?.login ?? null;
+  useEffect(() => {
+    if (!destLogin) {
+      setDestCalendar(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchSourceCalendars({
+      data: { usernames: [destLogin], from, to },
+    })
+      .then((calendars) => {
+        if (!cancelled) setDestCalendar(calendars[0] ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setDestCalendar(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [destLogin, from, to]);
+
+  const destCounts = useMemo(
+    () => (destCalendar ? mergeCalendars([destCalendar]) : {}),
+    [destCalendar],
+  );
+
+  const sourceCounts = useMemo(() => mergeCalendars(sources), [sources]);
+  const resultCounts = useMemo(
+    () =>
+      mergeCalendars([
+        ...(destCalendar ? [destCalendar] : []),
+        ...sources,
+      ]),
+    [destCalendar, sources],
+  );
+  const previewCounts =
+    previewView === "from"
+      ? sourceCounts
+      : previewView === "to"
+        ? destCounts
+        : resultCounts;
   const plan = useMemo(
-    () => planCommits(counts, intensity, from, to),
-    [counts, intensity, from, to],
+    () => planCommits(sourceCounts, intensity, from, to),
+    [sourceCounts, intensity, from, to],
   );
   const planned = totalPlanned(plan);
   const daysActive = activeDays(plan);
   const sourceTotal = sources.reduce((sum, s) => sum + s.total, 0);
+  const previewTotal = Object.values(previewCounts).reduce(
+    (sum, n) => sum + n,
+    0,
+  );
+  const previewActiveDays = Object.values(previewCounts).filter(
+    (n) => n > 0,
+  ).length;
 
   async function loadUsers(usernames: string[]) {
     const unique = [...new Set(usernames.map((u) => u.toLowerCase()))];
@@ -181,7 +233,6 @@ export function Workbench() {
           usernames: unique,
           from,
           to,
-          token: token || undefined,
         },
       });
       setSources((prev) => {
@@ -208,7 +259,7 @@ export function Workbench() {
       return;
     }
     if (sources.length >= MAX_SOURCES) {
-      toast.error(`You can copy from up to ${MAX_SOURCES} accounts`);
+      toast.error(`You can add up to ${MAX_SOURCES} work accounts`);
       return;
     }
     setDraftUser("");
@@ -219,21 +270,13 @@ export function Workbench() {
     setSources((prev) => prev.filter((s) => s.login !== login));
   }
 
-  function saveToken() {
-    const next = tokenDraft.trim();
-    if (next) localStorage.setItem(TOKEN_KEY, next);
-    else localStorage.removeItem(TOKEN_KEY);
-    setToken(next);
-    toast.success(next ? "GitHub token saved on this device" : "GitHub token cleared");
-  }
-
   function downloadScript() {
     const owner = dest?.login || destLoginDraft.trim() || "YOUR_USERNAME";
     const name = dest?.name || owner;
     const mail = email || `${owner}@users.noreply.github.com`;
     const body = generateBashScript({
       owner,
-      repo: repo.trim() || "graph-copy",
+      repo: repo.trim() || DEFAULT_REPO,
       name,
       email: mail,
       plan,
@@ -242,10 +285,10 @@ export function Workbench() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "graph-copy.sh";
+    a.download = "greenkeep.sh";
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Downloaded graph-copy.sh");
+    toast.success("Downloaded greenkeep.sh");
   }
 
   async function runWrite() {
@@ -253,8 +296,9 @@ export function Workbench() {
       setAuthMode("login");
       return;
     }
-    if (!token || !dest) {
-      toast.error("Add a GitHub token under Copy to so we can open the private repo");
+    if (!dest) {
+      toast.error("Sign in with GitHub so we can open the private repo");
+      setAuthMode("login");
       return;
     }
     const mail = email.trim();
@@ -264,7 +308,7 @@ export function Workbench() {
     }
     const specs = expandPlan(plan);
     if (specs.length === 0) {
-      toast.error("Nothing to copy in this range");
+      toast.error("Nothing to keep in this range");
       return;
     }
     abortRef.current = false;
@@ -275,8 +319,7 @@ export function Workbench() {
     try {
       const session = await beginMirrorRepo({
         data: {
-          token,
-          repo: repo.trim() || "graph-copy",
+          repo: repo.trim() || DEFAULT_REPO,
           isPrivate,
         },
       });
@@ -287,7 +330,6 @@ export function Workbench() {
         const chunk = specs.slice(i, i + BATCH);
         const result = await appendMirrorCommits({
           data: {
-            token,
             owner: session.owner,
             repo: session.repo,
             branch: session.branch,
@@ -301,7 +343,7 @@ export function Workbench() {
         parentSha = result.parentSha;
         setWritten(Math.min(specs.length, i + chunk.length));
       }
-      toast.success("Mock commits pushed. GitHub may take a few minutes to draw the graph.");
+      toast.success("Commits are on GitHub. The graph can take a few minutes to catch up.");
       setConfirmOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Write failed");
@@ -319,9 +361,9 @@ export function Workbench() {
           <LogoMark />
           <div className="leading-tight">
             <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
-              Graph Copier
+              Greenkeep
             </p>
-            <p className="text-sm font-medium">Contribution mirror</p>
+            <p className="text-sm font-medium">Work history, kept</p>
           </div>
         </div>
         <AuthBar
@@ -338,7 +380,7 @@ export function Workbench() {
                 <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
                   01
                 </p>
-                <h2 className="text-sm font-medium">Copy from</h2>
+                <h2 className="text-sm font-medium">Work accounts</h2>
               </div>
               <span className="font-mono text-xs tabular-nums text-muted-foreground">
                 {sources.length}/{MAX_SOURCES}
@@ -354,11 +396,11 @@ export function Workbench() {
               <Input
                 value={draftUser}
                 onChange={(e) => setDraftUser(e.target.value)}
-                placeholder="GitHub username"
+                placeholder="Work GitHub username"
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
-                aria-label="Source GitHub username"
+                aria-label="Work GitHub username"
               />
               <Button
                 type="submit"
@@ -370,24 +412,10 @@ export function Workbench() {
               </Button>
             </form>
             {sources.length === 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-muted-foreground">
-                  Add the work accounts whose public graphs you want on your
-                  personal profile.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {["gaearon", "octocat"].map((sample) => (
-                    <button
-                      key={sample}
-                      type="button"
-                      className="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
-                      onClick={() => void loadUsers([sample])}
-                    >
-                      @{sample}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Add the work GitHub accounts whose public graphs should
+                follow you home.
+              </p>
             )}
             <ul className="flex flex-col gap-2">
               {sources.map((source) => (
@@ -480,7 +508,7 @@ export function Workbench() {
               <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
                 03
               </p>
-              <h2 className="text-sm font-medium">Copy to</h2>
+              <h2 className="text-sm font-medium">Personal account</h2>
             </div>
             {dest ? (
               <div className="flex items-center gap-3 rounded-lg bg-card p-2 shadow-[0_0_0_1px_rgb(255_255_255/0.06)]">
@@ -500,17 +528,10 @@ export function Workbench() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dest">Destination account</Label>
-                <Input
-                  id="dest"
-                  value={destLoginDraft}
-                  onChange={(e) => setDestLoginDraft(e.target.value)}
-                  placeholder="your-username"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                />
-              </div>
+              <p className="text-2xs text-muted-foreground">
+                Sign in with the personal GitHub that should keep the
+                squares. We write as that user.
+              </p>
             )}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="repo">Private repo</Label>
@@ -518,35 +539,10 @@ export function Workbench() {
                 id="repo"
                 value={repo}
                 onChange={(e) => setRepo(e.target.value)}
-                placeholder="graph-copy"
+                placeholder={DEFAULT_REPO}
                 autoCapitalize="off"
                 spellCheck={false}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="token">GitHub token</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="token"
-                  type="password"
-                  autoComplete="off"
-                  value={tokenDraft}
-                  onChange={(e) => setTokenDraft(e.target.value)}
-                  placeholder="ghp_…"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="shrink-0"
-                  onClick={saveToken}
-                >
-                  Save
-                </Button>
-              </div>
-              <p className="text-2xs text-muted-foreground">
-                Repo scope, stored only on this device. Needed to create the
-                private mirror — sign-in does not grant GitHub write access.
-              </p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Commit email</Label>
@@ -569,7 +565,7 @@ export function Workbench() {
                 onChange={(e) => setIsPrivate(e.target.checked)}
                 className="size-4 rounded border-input accent-primary"
               />
-              Keep the mirror repo private
+              Keep the repo private
             </label>
           </section>
         </aside>
@@ -578,12 +574,12 @@ export function Workbench() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
               <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">
-                Copy a graph onto your own.
+                Bring your work history home.
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Merge public contribution calendars from other GitHub accounts
-                you use at work, then write backdated empty commits to a private
-                repo on the account you want to show.
+                Company GitHub stays at work. Greenkeep reads that public
+                graph and writes empty, backdated commits to a private repo
+                on your personal account.
               </p>
             </div>
             <GraphLegend />
@@ -601,56 +597,86 @@ export function Workbench() {
                 <Input
                   value={draftUser}
                   onChange={(e) => setDraftUser(e.target.value)}
-                  placeholder="GitHub username to copy"
+                  placeholder="Work GitHub username"
                   autoCapitalize="off"
                   autoCorrect="off"
                   spellCheck={false}
-                  aria-label="Source GitHub username"
+                  aria-label="Work GitHub username"
                 />
                 <Button type="submit" size="icon" variant="secondary" aria-label="Add account">
                   <Plus />
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {["gaearon", "octocat"].map((sample) => (
-                  <button
-                    key={sample}
-                    type="button"
-                    className="rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
-                    onClick={() => void loadUsers([sample])}
-                  >
-                    @{sample}
-                  </button>
-                ))}
-              </div>
             </form>
           )}
 
           <section className="rounded-xl bg-card p-4 shadow-[0_0_0_1px_rgb(255_255_255/0.06)] sm:p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Merged preview</p>
                 <p className="font-mono text-sm tabular-nums">
-                  {sources.length} {sources.length === 1 ? "account" : "accounts"} ·{" "}
-                  {sourceTotal.toLocaleString()} contributions · {daysActive} days ·{" "}
-                  {planned} commits
+                  {previewView === "from" && (
+                    <>
+                      {sources.length}{" "}
+                      {sources.length === 1 ? "account" : "accounts"} ·{" "}
+                      {sourceTotal.toLocaleString()} contributions · {daysActive}{" "}
+                      days · {planned} commits
+                    </>
+                  )}
+                  {previewView === "to" &&
+                    (destCalendar
+                      ? `@${destCalendar.login} · ${destCalendar.total.toLocaleString()} contributions`
+                      : "Sign in to load your personal graph")}
+                  {previewView === "result" && (
+                    <>
+                      {previewTotal.toLocaleString()} contributions ·{" "}
+                      {previewActiveDays} days
+                      {destCalendar || sources.length > 0
+                        ? " combined"
+                        : ""}
+                    </>
+                  )}
                 </p>
               </div>
-              {resolving && (
-                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <LoaderCircle className="size-3.5 animate-spin" />
-                  Checking token
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {resolving && (
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <LoaderCircle className="size-3.5 animate-spin" />
+                    Reading GitHub account
+                  </span>
+                )}
+                <div className="flex rounded-full bg-muted p-0.5">
+                  {(
+                    [
+                      ["from", "Work"],
+                      ["to", "Personal"],
+                      ["result", "After"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setPreviewView(id)}
+                      className={cn(
+                        "rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150",
+                        previewView === id
+                          ? "bg-background text-foreground shadow-[0_0_0_1px_rgb(255_255_255/0.10)]"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <ContributionGraph from={from} to={to} counts={counts} />
+            <ContributionGraph from={from} to={to} counts={previewCounts} />
           </section>
 
           <section className="flex flex-col gap-4 rounded-xl bg-card p-4 shadow-[0_0_0_1px_rgb(255_255_255/0.06)] sm:p-5">
             <div>
               <h2 className="text-sm font-medium">Intensity</h2>
               <p className="text-xs text-muted-foreground">
-                How faithfully to replay each day when writing mock commits.
+                How closely the new squares should match the work graph.
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -681,8 +707,7 @@ export function Workbench() {
             </div>
             {intensity === "counts" && (
               <p className="text-2xs text-muted-foreground">
-                Exact mode caps at 20 commits per day so a write stays
-                practical.
+                Busy days can take a while.
               </p>
             )}
           </section>
@@ -735,8 +760,8 @@ export function Workbench() {
                   setAuthMode("login");
                   return;
                 }
-                if (!token) {
-                  toast.error("Add a GitHub token under Copy to");
+                if (!dest) {
+                  setAuthMode("login");
                   return;
                 }
                 setConfirmOpen(true);
@@ -767,7 +792,7 @@ export function Workbench() {
                 onClick={() => setSources([])}
               >
                 <Trash2 />
-                Clear sources
+                Clear work accounts
               </Button>
             )}
           </div>
@@ -779,15 +804,15 @@ export function Workbench() {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Write mock commits?</DialogTitle>
+            <DialogTitle>Write these commits?</DialogTitle>
             <DialogDescription>
               This creates or reuses the private repo{" "}
               <span className="font-mono text-foreground">
-                {dest?.login || destLoginDraft}/{repo || "graph-copy"}
+                {dest?.login || destLoginDraft}/{repo || DEFAULT_REPO}
               </span>{" "}
-              and appends {planned.toLocaleString()} empty, backdated commits
-              so GitHub paints the copied graph. Use this for accounts you
-              own.
+              and adds {planned.toLocaleString()} empty, backdated commits.
+              GitHub will count them on the signed-in account. Only do this
+              with accounts you own.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

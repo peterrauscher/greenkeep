@@ -1,20 +1,18 @@
 /**
- * Live-preview sign-in popup — server-only (NEVER import from the client).
+ * Sign-in popup — server-only (NEVER import from the client).
  *
- * The sandbox preview runs the app in a partitioned iframe, so OAuth must happen
- * in a top-level popup (first-party cookies). This handler is the ENTIRE popup
- * document — no React shell:
+ * OAuth happens in a top-level popup (first-party cookies). This handler is
+ * the ENTIRE popup document — no React shell:
  *
- *   Phase 1 (`?providerId=…`): start OAuth server-side and 302 straight to the
- *     broker / upstream login page. The popup never paints the app.
- *   Phase 2 (`?done=1`): after the broker round-trip, emit a tiny HTML page that
- *     posts the session token to the opener and closes. No SPA hydrate, no
- *     server-fn round-trip.
+ *   Phase 1 (`?providerId=…`): start GitHub OAuth server-side and 302
+ *     straight to GitHub. The popup never paints the app.
+ *   Phase 2 (`?done=1`): after the GitHub round-trip, emit a tiny HTML page
+ *     that posts the session token to the opener and closes.
  *
- * Wired automatically by the Vite `authPopupPlugin` in `vite.config.ts` during
- * `npm run dev` (live preview). Do NOT create `src/routes/auth/popup.tsx` — a
- * React route here paints the full app shell in the popup. The opener lives in
- * `client.ts` (`signIn` → `openSignInPopup`).
+ * Wired by the Vite `authPopupPlugin` in `vite.config.ts` during `npm run
+ * dev`, and by `server/middleware/auth-popup.ts` when deployed. Do NOT
+ * create `src/routes/auth/popup.tsx` — a React route here paints the full
+ * app shell in the popup. The opener lives in `client.ts`.
  */
 import { auth, SESSION_TOKEN_COOKIE } from "./server";
 
@@ -62,11 +60,12 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
   // Stay first-party for the callback so the session cookie lands in THIS popup.
   const back = `${url.origin}/auth/popup?done=1`;
   try {
-    const apiRes = await auth.api.signInWithOAuth2({
+    const apiRes = await auth.api.signInSocial({
       body: {
-        providerId,
+        provider: "github",
         callbackURL: back,
         errorCallbackURL: `${back}&error=1`,
+        disableRedirect: true,
       },
       // Forward the preview host so Better Auth derives the correct baseURL /
       // redirect_uri for the dynamic `*.grok-sandbox.com` origin.
@@ -95,8 +94,8 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
       });
     }
 
-    // 302 to the broker (which headlessly forwards to Google/X). Forward any
-    // Set-Cookie (OAuth state / PKCE) so the callback can complete in this popup.
+    // 302 to GitHub. Forward any Set-Cookie (OAuth state / PKCE) so the
+    // callback can complete in this popup.
     const headers = new Headers({ location, "cache-control": "no-store" });
     for (const cookie of apiRes.headers.getSetCookie()) {
       headers.append("set-cookie", cookie);

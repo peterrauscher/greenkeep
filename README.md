@@ -1,20 +1,22 @@
-# Graph Copier
+# Greenkeep
 
-![Graph Copier](banner.jpg)
+![Greenkeep](banner.jpg)
 
-Web app that copies GitHub contribution graphs from other accounts onto a private repo using backdated mock commits.
+Bring a work GitHub contribution graph onto your personal account.
 
-This is the app successor to the original `commit-graph-copier` idea: paste source GitHub usernames, preview the merged graph, then write empty backdated commits to a private repo so GitHub paints the same squares on your profile.
+Work stays on the company org. Greenkeep reads that public calendar, then writes empty, backdated commits to a private repo on the account you sign in with. GitHub paints the squares there.
+
+Use it for accounts you own.
 
 ## Stack
 
 - TanStack Start + React + Vite
-- Better Auth (`/api/auth/*`) with Google and X via the Grok auth broker
+- Better Auth (`/api/auth/*`) with Sign in with GitHub (`repo` + `user:email`)
 - GitHub REST API for graphs, repo create, and git commits
 
 ## Auth today
 
-Header **Log In** / **Sign Up** opens a dialog. OAuth options are **Google** and **X**. Writing commits still needs a GitHub personal access token (repo scope) in the Copy-to panel, because Google/X sign-in does not grant GitHub write access.
+Header **Log In** / **Sign Up** both open the same dialog. The only button is **Continue with GitHub**. After sign-in the GitHub access token is stored on the Better Auth account and used server-side to create the private repo. There is no client PAT field.
 
 ## Run
 
@@ -27,4 +29,4 @@ App listens on port 8080.
 
 ## Write path
 
-Server functions in `src/lib/github-fn.ts` fetch contribution calendars, create/reuse a private repo, and append empty commits. Destination identity comes from the GitHub token (`/user` + `/user/emails`).
+Server functions in `src/lib/github-fn.ts` fetch contribution calendars, create/reuse a private repo, and append empty commits. Destination identity comes from the signed-in GitHub user (`/user` + `/user/emails`). Writes fail closed if the grant lacks `repo`. Sign-out wipes the stored GitHub token.

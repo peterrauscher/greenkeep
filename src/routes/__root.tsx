@@ -4,7 +4,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Graph Copier";
+const APP_NAME = "Greenkeep";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -15,7 +15,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Copy GitHub contribution graphs from other accounts onto a private repo with backdated mock commits.",
+          "Move a work GitHub contribution graph onto your personal account. Greenkeep writes empty, backdated commits to a private repo so the squares come with you.",
       },
       { name: "theme-color", content: "#0c0c0c" },
     ],

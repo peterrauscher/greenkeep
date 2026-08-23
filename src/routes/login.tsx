@@ -12,15 +12,15 @@ function Login() {
     <main className="grid min-h-dvh place-items-center bg-background p-6 text-foreground">
       <div className="w-full max-w-sm rounded-xl bg-card p-6 shadow-[0_0_0_1px_rgb(255_255_255/0.06)]">
         <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
-          Graph Copier
+          Greenkeep
         </p>
         <h1 className="mt-2 text-xl font-medium tracking-tight">
           {isSignup ? "Create an account" : "Log in"}
         </h1>
         <p className="mt-1 mb-5 text-sm text-muted-foreground">
           {isSignup
-            ? "Sign up to write mirrored commits to a private GitHub repo."
-            : "Welcome back. Continue with a provider to pick up where you left off."}
+            ? "Use the personal GitHub that should keep the history."
+            : "Continue with the personal GitHub you want to write to."}
         </p>
         <AuthForm
           mode={mode}

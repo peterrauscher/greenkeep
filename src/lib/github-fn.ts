@@ -1,9 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { authMiddleware } from "@/lib/auth/middleware";
+import { getGithubAccessToken } from "@/lib/auth/github-token.server";
 import type { DayCount, SourceCalendar } from "@/lib/github";
 
 const GITHUB_API = "https://api.github.com";
-const UA = "GraphCopier/1.0";
+const UA = "Greenkeep/1.0";
 
 const usernameSchema = z
   .string()
@@ -53,21 +55,6 @@ async function ghJson<T>(
     throw new Error(message);
   }
   return json as T;
-}
-
-function levelFromGraphql(level: string): number {
-  switch (level) {
-    case "FIRST_QUARTILE":
-      return 1;
-    case "SECOND_QUARTILE":
-      return 2;
-    case "THIRD_QUARTILE":
-      return 3;
-    case "FOURTH_QUARTILE":
-      return 4;
-    default:
-      return 0;
-  }
 }
 
 function yearWindows(from: string, to: string): { from: string; to: string }[] {
@@ -144,84 +131,6 @@ async function fetchUserProfile(login: string, token?: string) {
   }
 }
 
-async function fetchCalendarGraphql(
-  login: string,
-  from: string,
-  to: string,
-  token: string,
-): Promise<DayCount[] | null> {
-  const query = `
-    query($login: String!, $from: DateTime!, $to: DateTime!) {
-      user(login: $login) {
-        contributionsCollection(from: $from, to: $to) {
-          contributionCalendar {
-            weeks {
-              contributionDays {
-                date
-                contributionCount
-                contributionLevel
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-  const windows = yearWindows(from, to);
-  const all: DayCount[] = [];
-  for (const win of windows) {
-    const res = await fetch(`${GITHUB_API}/graphql`, {
-      method: "POST",
-      headers: {
-        ...apiHeaders(token),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query,
-        variables: {
-          login,
-          from: `${win.from}T00:00:00Z`,
-          to: `${win.to}T23:59:59Z`,
-        },
-      }),
-    });
-    const body = (await res.json()) as {
-      data?: {
-        user?: {
-          contributionsCollection?: {
-            contributionCalendar?: {
-              weeks: {
-                contributionDays: {
-                  date: string;
-                  contributionCount: number;
-                  contributionLevel: string;
-                }[];
-              }[];
-            };
-          };
-        };
-      };
-      errors?: { message: string }[];
-    };
-    if (!res.ok || body.errors?.length || !body.data?.user) {
-      return null;
-    }
-    const weeks =
-      body.data.user.contributionsCollection?.contributionCalendar?.weeks ?? [];
-    for (const week of weeks) {
-      for (const day of week.contributionDays) {
-        if (day.date < from || day.date > to) continue;
-        all.push({
-          date: day.date,
-          count: day.contributionCount,
-          level: levelFromGraphql(day.contributionLevel),
-        });
-      }
-    }
-  }
-  return all;
-}
-
 async function fetchCalendarHtml(
   login: string,
   from: string,
@@ -259,7 +168,6 @@ export const fetchSourceCalendars = createServerFn({ method: "POST" })
       usernames: z.array(usernameSchema).min(1).max(8),
       from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      token: z.string().optional(),
     }),
   )
   .handler(async ({ data }): Promise<SourceCalendar[]> => {
@@ -269,22 +177,9 @@ export const fetchSourceCalendars = createServerFn({ method: "POST" })
     const unique = [...new Set(data.usernames.map((u) => u.toLowerCase()))];
     const results = await Promise.all(
       unique.map(async (login) => {
-        const profile = data.token
-          ? await fetchUserProfile(login, data.token)
-          : null;
+        const profile = await fetchUserProfile(login);
         const handle = profile?.login ?? login;
-        let days: DayCount[] | null = null;
-        if (data.token) {
-          days = await fetchCalendarGraphql(
-            handle,
-            data.from,
-            data.to,
-            data.token,
-          );
-        }
-        if (!days) {
-          days = await fetchCalendarHtml(handle, data.from, data.to);
-        }
+        const days = await fetchCalendarHtml(handle, data.from, data.to);
         const total = days.reduce((sum, d) => sum + d.count, 0);
         return {
           login: handle,
@@ -301,18 +196,21 @@ export const fetchSourceCalendars = createServerFn({ method: "POST" })
   });
 
 export const resolveDestination = createServerFn({ method: "POST" })
-  .validator(z.object({ token: z.string().min(8) }))
-  .handler(async ({ data }) => {
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { accessToken: token } = await getGithubAccessToken({
+      bearerToken: context.bearerToken,
+    });
     const user = await ghJson<{
       login: string;
       name: string | null;
       email: string | null;
       avatar_url: string;
-    }>(`${GITHUB_API}/user`, { token: data.token });
+    }>(`${GITHUB_API}/user`, { token });
 
     let emails: { email: string; primary: boolean; verified: boolean }[] = [];
     try {
-      emails = await ghJson(`${GITHUB_API}/user/emails`, { token: data.token });
+      emails = await ghJson(`${GITHUB_API}/user/emails`, { token });
     } catch {
       emails = [];
     }
@@ -338,9 +236,9 @@ const commitSpec = z.object({
 });
 
 export const beginMirrorRepo = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     z.object({
-      token: z.string().min(8),
       repo: z
         .string()
         .trim()
@@ -350,26 +248,29 @@ export const beginMirrorRepo = createServerFn({ method: "POST" })
       isPrivate: z.boolean(),
     }),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { accessToken: token } = await getGithubAccessToken({
+      bearerToken: context.bearerToken,
+    });
     const user = await ghJson<{ login: string }>(`${GITHUB_API}/user`, {
-      token: data.token,
+      token,
     });
     const owner = user.login;
     let repoMeta: { default_branch: string; html_url: string } | null = null;
     try {
       repoMeta = await ghJson(
         `${GITHUB_API}/repos/${owner}/${data.repo}`,
-        { token: data.token },
+        { token },
       );
     } catch {
       repoMeta = await ghJson(`${GITHUB_API}/user/repos`, {
         method: "POST",
-        token: data.token,
+        token,
         body: {
           name: data.repo,
           private: data.isPrivate,
           auto_init: true,
-          description: "Private contribution mirror generated by Graph Copier",
+          description: "Work contribution history kept by Greenkeep",
         },
       });
     }
@@ -377,13 +278,13 @@ export const beginMirrorRepo = createServerFn({ method: "POST" })
     const ref = await ghJson<{
       object: { sha: string };
     }>(`${GITHUB_API}/repos/${owner}/${data.repo}/git/ref/heads/${branch}`, {
-      token: data.token,
+      token,
     });
     const commit = await ghJson<{
       sha: string;
       tree: { sha: string };
     }>(`${GITHUB_API}/repos/${owner}/${data.repo}/git/commits/${ref.object.sha}`, {
-      token: data.token,
+      token,
     });
     return {
       owner,
@@ -396,9 +297,9 @@ export const beginMirrorRepo = createServerFn({ method: "POST" })
   });
 
 export const appendMirrorCommits = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     z.object({
-      token: z.string().min(8),
       owner: usernameSchema,
       repo: z.string().min(1).max(100),
       branch: z.string().min(1),
@@ -409,14 +310,17 @@ export const appendMirrorCommits = createServerFn({ method: "POST" })
       commits: z.array(commitSpec).min(1).max(40),
     }),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { accessToken: token } = await getGithubAccessToken({
+      bearerToken: context.bearerToken,
+    });
     let parentSha = data.parentSha;
     for (const spec of data.commits) {
       const created = await ghJson<{ sha: string }>(
         `${GITHUB_API}/repos/${data.owner}/${data.repo}/git/commits`,
         {
           method: "POST",
-          token: data.token,
+          token,
           body: {
             message: spec.message,
             tree: data.treeSha,
@@ -440,7 +344,7 @@ export const appendMirrorCommits = createServerFn({ method: "POST" })
       `${GITHUB_API}/repos/${data.owner}/${data.repo}/git/refs/heads/${data.branch}`,
       {
         method: "PATCH",
-        token: data.token,
+        token,
         body: { sha: parentSha },
       },
     );
