@@ -166,7 +166,7 @@ export function ContributionGraph({
       </div>
       {hover && !compact && (
         <div
-          className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-popover px-2 py-1.5 text-xs text-popover-foreground shadow-[0_0_0_1px_rgb(255_255_255/0.06)]"
+          className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-popover px-2 py-1.5 text-xs text-popover-foreground"
           style={{ left: hover.x, top: hover.y - 8 }}
         >
           <span className="font-medium tabular-nums">

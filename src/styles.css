@@ -1,35 +1,37 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  --color-background: #0c0c0c;
-  --color-foreground: #ededed;
-  --color-card: #141414;
-  --color-card-foreground: #ededed;
-  --color-popover: #161616;
-  --color-popover-foreground: #ededed;
-  --color-muted: #1a1a1a;
-  --color-muted-foreground: #8c8c8c;
-  --color-border: rgb(255 255 255 / 0.08);
-  --color-input: rgb(255 255 255 / 0.1);
-  --color-ring: #d4d4d4;
-  --color-primary: #f4f4f5;
-  --color-primary-foreground: #0c0c0c;
-  --color-secondary: #1c1c1c;
-  --color-secondary-foreground: #ededed;
-  --color-accent: #222222;
-  --color-accent-foreground: #ededed;
+  --color-background: #f3f4f3;
+  --color-foreground: #141615;
+  --color-card: #ffffff;
+  --color-card-foreground: #141615;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #141615;
+  --color-muted: #e7e9e7;
+  --color-muted-foreground: #5c635f;
+  --color-border: rgb(20 22 21 / 0.1);
+  --color-input: rgb(20 22 21 / 0.12);
+  --color-ring: #3a3f3c;
+  --color-primary: #141615;
+  --color-primary-foreground: #f3f4f3;
+  --color-secondary: #eceeed;
+  --color-secondary-foreground: #141615;
+  --color-accent: #e2e5e2;
+  --color-accent-foreground: #141615;
   --color-destructive: #b42318;
   --color-destructive-foreground: #fafafa;
 
-  --color-graph-0: #161616;
-  --color-graph-1: #0e4429;
-  --color-graph-2: #006d32;
-  --color-graph-3: #26a641;
-  --color-graph-4: #3fb950;
+  --color-graph-0: #ebedf0;
+  --color-graph-1: #9be9a8;
+  --color-graph-2: #40c463;
+  --color-graph-3: #30a14e;
+  --color-graph-4: #216e39;
 
   --text-2xs: 0.6875rem;
   --text-tiny: 0.625rem;
@@ -39,6 +41,36 @@
   --radius-lg: 1rem;
   --radius-xl: 1.375rem;
   --radius: 0.625rem;
+}
+
+@layer theme {
+  .dark {
+    --color-background: #0c0c0c;
+    --color-foreground: #ededed;
+    --color-card: #141414;
+    --color-card-foreground: #ededed;
+    --color-popover: #161616;
+    --color-popover-foreground: #ededed;
+    --color-muted: #1a1a1a;
+    --color-muted-foreground: #8c8c8c;
+    --color-border: rgb(255 255 255 / 0.08);
+    --color-input: rgb(255 255 255 / 0.1);
+    --color-ring: #d4d4d4;
+    --color-primary: #f4f4f5;
+    --color-primary-foreground: #0c0c0c;
+    --color-secondary: #1c1c1c;
+    --color-secondary-foreground: #ededed;
+    --color-accent: #222222;
+    --color-accent-foreground: #ededed;
+    --color-destructive: #b42318;
+    --color-destructive-foreground: #fafafa;
+
+    --color-graph-0: #161616;
+    --color-graph-1: #0e4429;
+    --color-graph-2: #006d32;
+    --color-graph-3: #26a641;
+    --color-graph-4: #3fb950;
+  }
 }
 
 @layer base {
@@ -71,7 +103,7 @@
     text-wrap: pretty;
   }
 
-  input[type="date"]::-webkit-calendar-picker-indicator {
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.45;
     cursor: pointer;

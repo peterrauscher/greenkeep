@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { Toaster } from "sonner";
+import { ThemeProvider, THEME_BOOTSTRAP_SCRIPT, useTheme } from "@/lib/theme";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Greenkeep";
@@ -15,7 +16,7 @@ export const Route = createRootRoute({
         content:
           "Move a work GitHub contribution graph onto your personal account. Greenkeep writes empty, backdated commits to a private repo so the squares come with you.",
       },
-      { name: "theme-color", content: "#0c0c0c" },
+      { name: "theme-color", content: "#f3f4f3" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -32,25 +33,38 @@ export const Route = createRootRoute({
       { rel: "stylesheet", href: appCss },
     ],
   }),
-  component: () => (
-    <html lang="en" className="dark antialiased" suppressHydrationWarning>
+  component: RootDocument,
+});
+
+function RootDocument() {
+  return (
+    <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
       </head>
       <body className="bg-background text-foreground">
-        <Outlet />
-        <Toaster
-          theme="dark"
-          position="bottom-right"
-          toastOptions={{
-            classNames: {
-              toast:
-                "bg-card text-card-foreground border-border font-sans text-sm",
-            },
-          }}
-        />
+        <ThemeProvider>
+          <Outlet />
+          <ThemedToaster />
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
-  ),
-});
+  );
+}
+
+function ThemedToaster() {
+  const { resolved } = useTheme();
+  return (
+    <Toaster
+      theme={resolved}
+      position="bottom-right"
+      toastOptions={{
+        classNames: {
+          toast: "bg-card text-card-foreground border-border font-sans text-sm",
+        },
+      }}
+    />
+  );
+}

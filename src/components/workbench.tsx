@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Download, Github, LoaderCircle, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBar, AuthDialog, type AuthMode } from "@/components/auth-dialog";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { ContributionGraph, GraphLegend } from "@/components/contribution-graph";
 import { Button } from "@/components/ui/button";
 import {
@@ -366,10 +367,13 @@ export function Workbench() {
             <p className="text-sm font-medium">Work history, kept</p>
           </div>
         </div>
-        <AuthBar
-          onLogin={() => setAuthMode("login")}
-          onSignup={() => setAuthMode("signup")}
-        />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <AuthBar
+            onLogin={() => setAuthMode("login")}
+            onSignup={() => setAuthMode("signup")}
+          />
+        </div>
       </header>
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col lg:flex-row">
@@ -421,7 +425,7 @@ export function Workbench() {
               {sources.map((source) => (
                 <li
                   key={source.login}
-                  className="flex items-center gap-3 rounded-lg bg-card p-2 pr-1 shadow-[0_0_0_1px_rgb(255_255_255/0.06)]"
+                  className="flex items-center gap-3 rounded-lg bg-card p-2 pr-1 ring-1 ring-border"
                 >
                   <img
                     src={source.avatarUrl}
@@ -511,7 +515,7 @@ export function Workbench() {
               <h2 className="text-sm font-medium">Personal account</h2>
             </div>
             {dest ? (
-              <div className="flex items-center gap-3 rounded-lg bg-card p-2 shadow-[0_0_0_1px_rgb(255_255_255/0.06)]">
+              <div className="flex items-center gap-3 rounded-lg bg-card p-2 ring-1 ring-border">
                 <img
                   src={dest.avatarUrl}
                   alt=""
@@ -610,7 +614,7 @@ export function Workbench() {
             </form>
           )}
 
-          <section className="rounded-xl bg-card p-4 shadow-[0_0_0_1px_rgb(255_255_255/0.06)] sm:p-5">
+          <section className="rounded-xl bg-card p-4 ring-1 ring-border sm:p-5">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="font-mono text-sm tabular-nums">
@@ -659,7 +663,7 @@ export function Workbench() {
                       className={cn(
                         "rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150",
                         previewView === id
-                          ? "bg-background text-foreground shadow-[0_0_0_1px_rgb(255_255_255/0.10)]"
+                          ? "bg-background text-foreground ring-1 ring-border"
                           : "text-muted-foreground hover:text-foreground",
                       )}
                     >
@@ -672,7 +676,7 @@ export function Workbench() {
             <ContributionGraph from={from} to={to} counts={previewCounts} />
           </section>
 
-          <section className="flex flex-col gap-4 rounded-xl bg-card p-4 shadow-[0_0_0_1px_rgb(255_255_255/0.06)] sm:p-5">
+          <section className="flex flex-col gap-4 rounded-xl bg-card p-4 ring-1 ring-border sm:p-5">
             <div>
               <h2 className="text-sm font-medium">Intensity</h2>
               <p className="text-xs text-muted-foreground">
@@ -694,8 +698,8 @@ export function Workbench() {
                   className={cn(
                     "rounded-lg px-3 py-3 text-left transition-[background-color,box-shadow] duration-150",
                     intensity === mode
-                      ? "bg-muted shadow-[0_0_0_1px_rgb(255_255_255/0.16)]"
-                      : "shadow-[0_0_0_1px_rgb(255_255_255/0.06)] hover:bg-muted/60",
+                      ? "bg-muted ring-1 ring-foreground/20"
+                      : "ring-1 ring-border hover:bg-muted/60",
                   )}
                 >
                   <p className="text-sm font-medium">{label}</p>
@@ -713,7 +717,7 @@ export function Workbench() {
           </section>
 
           {writing && (
-            <section className="flex flex-col gap-2 rounded-xl bg-card p-4 shadow-[0_0_0_1px_rgb(255_255_255/0.06)]">
+            <section className="flex flex-col gap-2 rounded-xl bg-card p-4 ring-1 ring-border">
               <div className="flex items-center justify-between text-xs">
                 <span>Writing backdated commits</span>
                 <span className="font-mono tabular-nums">
