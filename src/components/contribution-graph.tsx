@@ -1,19 +1,8 @@
 import { useMemo, useState } from "react";
-import {
-  buildWeeks,
-  countsToLevels,
-  formatDayLabel,
-  monthLabel,
-} from "@/lib/github";
+import { buildWeeks, countsToLevels, formatDayLabel, monthLabel } from "@/lib/github";
 import { cn } from "@/lib/utils";
 
-const LEVEL_CLASS = [
-  "bg-graph-0",
-  "bg-graph-1",
-  "bg-graph-2",
-  "bg-graph-3",
-  "bg-graph-4",
-] as const;
+const LEVEL_CLASS = ["bg-graph-0", "bg-graph-1", "bg-graph-2", "bg-graph-3", "bg-graph-4"] as const;
 
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
@@ -25,13 +14,7 @@ type GraphProps = {
   className?: string;
 };
 
-export function ContributionGraph({
-  from,
-  to,
-  counts,
-  compact = false,
-  className,
-}: GraphProps) {
+export function ContributionGraph({ from, to, counts, compact = false, className }: GraphProps) {
   const weeks = useMemo(() => buildWeeks(from, to), [from, to]);
   const levels = useMemo(() => {
     const filled: Record<string, number> = { ...counts };
@@ -93,10 +76,7 @@ export function ContributionGraph({
                 {weeks.map((_, i) => {
                   const mark = monthMarks.find((m) => m.index === i);
                   return (
-                    <span
-                      key={i}
-                      className="relative h-3 w-2.5 shrink-0 sm:w-3 lg:w-3.5"
-                    >
+                    <span key={i} className="relative h-3 w-2.5 shrink-0 sm:w-3 lg:w-3.5">
                       {mark ? (
                         <span className="absolute top-0 left-0 whitespace-nowrap text-tiny leading-3 text-muted-foreground">
                           {mark.label}
@@ -117,12 +97,7 @@ export function ContributionGraph({
                 <div key={wi} className={cn("flex flex-col", gap)} role="row">
                   {week.map((date, di) => {
                     if (!date) {
-                      return (
-                        <span
-                          key={`${wi}-${di}`}
-                          className={cn(cell, "opacity-0")}
-                        />
-                      );
+                      return <span key={`${wi}-${di}`} className={cn(cell, "opacity-0")} />;
                     }
                     const level = levels[date] ?? 0;
                     const count = counts[date] ?? 0;
@@ -172,10 +147,7 @@ export function ContributionGraph({
           <span className="font-medium tabular-nums">
             {hover.count} {hover.count === 1 ? "contribution" : "contributions"}
           </span>
-          <span className="text-muted-foreground">
-            {" "}
-            on {formatDayLabel(hover.date)}
-          </span>
+          <span className="text-muted-foreground"> on {formatDayLabel(hover.date)}</span>
         </div>
       )}
     </div>
@@ -193,5 +165,3 @@ export function GraphLegend() {
     </div>
   );
 }
-
-

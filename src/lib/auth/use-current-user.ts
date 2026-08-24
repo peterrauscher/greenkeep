@@ -42,9 +42,7 @@ export type CurrentUserState = {
  *
  * Wait out `isPending` before treating `user: null` as signed out.
  */
-export function useCurrentUserState(): CurrentUserState {
-  if (!authEnabled) return { user: DEV_USER, isPending: false };
-  // eslint-disable-next-line react-hooks/rules-of-hooks -- authEnabled is constant for the app's lifetime
+function useAuthenticatedCurrentUserState(): CurrentUserState {
   const { data, isPending } = authClient.useSession();
   const sessionUser = data?.user;
   const user = useMemo<AppUser | null>(() => {
@@ -56,13 +54,25 @@ export function useCurrentUserState(): CurrentUserState {
       profileImageUrl: sessionUser.image ?? null,
       isDevFallback: false,
     };
-  }, [
-    sessionUser?.id,
-    sessionUser?.name,
-    sessionUser?.email,
-    sessionUser?.image,
-  ]);
+  }, [sessionUser]);
   return { user, isPending };
+}
+
+const DEV_CURRENT_USER_STATE: CurrentUserState = {
+  user: DEV_USER,
+  isPending: false,
+};
+
+function useDevCurrentUserState(): CurrentUserState {
+  return DEV_CURRENT_USER_STATE;
+}
+
+const useConfiguredCurrentUserState = authEnabled
+  ? useAuthenticatedCurrentUserState
+  : useDevCurrentUserState;
+
+export function useCurrentUserState(): CurrentUserState {
+  return useConfiguredCurrentUserState();
 }
 
 /**

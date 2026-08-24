@@ -113,8 +113,7 @@
 
 .graph-scroll {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground) 55%, transparent)
-    transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground) 55%, transparent) transparent;
 }
 
 .graph-scroll::-webkit-scrollbar {

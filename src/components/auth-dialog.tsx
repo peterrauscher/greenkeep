@@ -15,13 +15,7 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
 export type AuthMode = "login" | "signup";
 
-export function AuthForm({
-  mode,
-  onToggle,
-}: {
-  mode: AuthMode;
-  onToggle: () => void;
-}) {
+export function AuthForm({ mode, onToggle }: { mode: AuthMode; onToggle: () => void }) {
   const [pending, setPending] = useState<string | null>(null);
   const isSignup = mode === "signup";
 
@@ -35,14 +29,10 @@ export function AuthForm({
           disabled={pending !== null}
           onClick={() => {
             setPending(GITHUB_PROVIDER_ID);
-            void signIn(GITHUB_PROVIDER_ID, { callbackURL: "/" }).catch(
-              (err: unknown) => {
-                setPending(null);
-                toast.error(
-                  err instanceof Error ? err.message : "Sign-in failed",
-                );
-              },
-            );
+            void signIn(GITHUB_PROVIDER_ID, { callbackURL: "/" }).catch((err: unknown) => {
+              setPending(null);
+              toast.error(err instanceof Error ? err.message : "Sign-in failed");
+            });
           }}
         >
           {pending === GITHUB_PROVIDER_ID ? (
@@ -102,21 +92,10 @@ export function AuthDialog({
   );
 }
 
-export function AuthBar({
-  onLogin,
-  onSignup,
-}: {
-  onLogin: () => void;
-  onSignup: () => void;
-}) {
+export function AuthBar({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => void }) {
   const { user, isPending } = useCurrentUserState();
   if (isPending) {
-    return (
-      <div
-        className="h-10 w-40 animate-pulse rounded-md bg-muted"
-        aria-hidden="true"
-      />
-    );
+    return <div className="h-10 w-40 animate-pulse rounded-md bg-muted" aria-hidden="true" />;
   }
   if (user) {
     return (
@@ -127,13 +106,7 @@ export function AuthBar({
   }
   return (
     <div className="flex items-center gap-2">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="min-h-10"
-        onClick={onLogin}
-      >
+      <Button type="button" variant="ghost" size="sm" className="min-h-10" onClick={onLogin}>
         Log In
       </Button>
       <Button type="button" size="sm" className="min-h-10" onClick={onSignup}>

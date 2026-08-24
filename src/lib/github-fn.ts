@@ -2,11 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getGithubAccessToken } from "@/lib/auth/github-token.server";
-import {
-  calendarYearWindows,
-  type DayCount,
-  type SourceCalendar,
-} from "@/lib/github";
+import { calendarYearWindows, type DayCount, type SourceCalendar } from "@/lib/github";
 
 const GITHUB_API = "https://api.github.com";
 const UA = "Greenkeep/1.0";
@@ -73,8 +69,7 @@ function parseContributionHtml(html: string): DayCount[] {
   }
 
   const counts = new Map<string, number>();
-  const tipRe =
-    /for="(contribution-day-component-[^"]+)"[^>]*>([\s\S]*?)<\/tool-tip>/g;
+  const tipRe = /for="(contribution-day-component-[^"]+)"[^>]*>([\s\S]*?)<\/tool-tip>/g;
   for (const match of html.matchAll(tipRe)) {
     const id = match[1]!;
     const body = (match[2] ?? "").replace(/\s+/g, " ").trim();
@@ -118,11 +113,7 @@ async function fetchUserProfile(login: string, token?: string) {
   }
 }
 
-async function fetchCalendarHtml(
-  login: string,
-  from: string,
-  to: string,
-): Promise<DayCount[]> {
+async function fetchCalendarHtml(login: string, from: string, to: string): Promise<DayCount[]> {
   const windows = calendarYearWindows(from, to);
   const all: DayCount[] = [];
   for (const win of windows) {
@@ -141,9 +132,7 @@ async function fetchCalendarHtml(
       );
     }
     const html = await res.text();
-    const days = parseContributionHtml(html).filter(
-      (d) => d.date >= from && d.date <= to,
-    );
+    const days = parseContributionHtml(html).filter((d) => d.date >= from && d.date <= to);
     all.push(...days);
   }
   return all;
@@ -171,9 +160,7 @@ export const fetchSourceCalendars = createServerFn({ method: "POST" })
         return {
           login: handle,
           name: profile?.name ?? null,
-          avatarUrl:
-            profile?.avatarUrl ??
-            `https://avatars.githubusercontent.com/${handle}?s=80`,
+          avatarUrl: profile?.avatarUrl ?? `https://avatars.githubusercontent.com/${handle}?s=80`,
           total,
           days,
         } satisfies SourceCalendar;
@@ -202,10 +189,7 @@ export const resolveDestination = createServerFn({ method: "POST" })
       emails = [];
     }
     const verified = emails.filter((e) => e.verified);
-    const email =
-      verified.find((e) => e.primary)?.email ??
-      verified[0]?.email ??
-      user.email;
+    const email = verified.find((e) => e.primary)?.email ?? verified[0]?.email ?? user.email;
 
     return {
       login: user.login,
@@ -245,10 +229,7 @@ export const beginMirrorRepo = createServerFn({ method: "POST" })
     const owner = user.login;
     let repoMeta: { default_branch: string; html_url: string } | null = null;
     try {
-      repoMeta = await ghJson(
-        `${GITHUB_API}/repos/${owner}/${data.repo}`,
-        { token },
-      );
+      repoMeta = await ghJson(`${GITHUB_API}/repos/${owner}/${data.repo}`, { token });
     } catch {
       repoMeta = await ghJson(`${GITHUB_API}/user/repos`, {
         method: "POST",
@@ -327,13 +308,10 @@ export const appendMirrorCommits = createServerFn({ method: "POST" })
       );
       parentSha = created.sha;
     }
-    await ghJson(
-      `${GITHUB_API}/repos/${data.owner}/${data.repo}/git/refs/heads/${data.branch}`,
-      {
-        method: "PATCH",
-        token,
-        body: { sha: parentSha },
-      },
-    );
+    await ghJson(`${GITHUB_API}/repos/${data.owner}/${data.repo}/git/refs/heads/${data.branch}`, {
+      method: "PATCH",
+      token,
+      body: { sha: parentSha },
+    });
     return { parentSha };
   });

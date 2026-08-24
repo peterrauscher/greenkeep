@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test 'scripts/**/*.test.mjs'",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "quality": "npm run format:check && npm run lint",
+    "prepare": "husky"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",
@@ -51,6 +54,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "husky": "^9.1.7",
     "lightningcss": "^1.28.0",
     "nitro": "3.0.260610-beta",
     "prettier": "^3.4.0",

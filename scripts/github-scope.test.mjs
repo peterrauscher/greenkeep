@@ -5,10 +5,7 @@ import { hasRepoScope, parseGithubScopes } from "./github-scope.mjs";
 test("parseGithubScopes splits GitHub spaces and Better Auth commas", () => {
   assert.deepEqual(parseGithubScopes("repo user:email"), ["repo", "user:email"]);
   assert.deepEqual(parseGithubScopes("repo,user:email"), ["repo", "user:email"]);
-  assert.deepEqual(parseGithubScopes(["repo", "user:email"]), [
-    "repo",
-    "user:email",
-  ]);
+  assert.deepEqual(parseGithubScopes(["repo", "user:email"]), ["repo", "user:email"]);
   assert.deepEqual(parseGithubScopes(null), []);
   assert.deepEqual(parseGithubScopes(""), []);
 });

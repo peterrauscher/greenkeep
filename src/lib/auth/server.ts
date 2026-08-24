@@ -38,8 +38,7 @@ const githubClientId = env("GITHUB_CLIENT_ID");
 const githubClientSecret = env("GITHUB_CLIENT_SECRET");
 
 /** True when GitHub sign-in is active. */
-export const authConfigured =
-  !authDisabled && Boolean(githubClientId && githubClientSecret);
+export const authConfigured = !authDisabled && Boolean(githubClientId && githubClientSecret);
 
 const explicitBaseURL = env("BETTER_AUTH_URL");
 const LOCAL_DEV_ORIGINS: string[] = [
@@ -116,4 +115,3 @@ export const auth = betterAuth({
 
   plugins: [bearer(), tanstackStartCookies()],
 });
-

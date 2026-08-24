@@ -23,10 +23,7 @@ export function AuthScreen({ initialMode = "login" }: { initialMode?: AuthMode }
             ? "Use the personal GitHub that should keep the history."
             : "Continue with the personal GitHub you want to write to."}
         </p>
-        <AuthForm
-          mode={mode}
-          onToggle={() => setMode(isSignup ? "login" : "signup")}
-        />
+        <AuthForm mode={mode} onToggle={() => setMode(isSignup ? "login" : "signup")} />
       </div>
     </main>
   );
@@ -35,10 +32,7 @@ export function AuthScreen({ initialMode = "login" }: { initialMode?: AuthMode }
 export function AuthPending() {
   return (
     <main className="grid min-h-dvh place-items-center bg-background p-6">
-      <div
-        className="h-10 w-40 animate-pulse rounded-md bg-muted"
-        aria-hidden="true"
-      />
+      <div className="h-10 w-40 animate-pulse rounded-md bg-muted" aria-hidden="true" />
       <span className="sr-only">Checking session</span>
     </main>
   );

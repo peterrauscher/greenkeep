@@ -37,4 +37,3 @@ export async function getGithubAccessToken(opts?: {
   }
   return { accessToken, scopes };
 }
-

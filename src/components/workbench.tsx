@@ -68,7 +68,6 @@ const SCRIPT_PLATFORMS: { id: ScriptPlatform; label: string }[] = [
   { id: "windows", label: "Windows" },
 ];
 
-
 const SCRIPT_STEPS: Record<ScriptPlatform, { title: string; detail?: string }[]> = {
   macos: [
     { title: "Open Terminal." },
@@ -138,9 +137,7 @@ function loadPrefs(): Prefs {
     return {
       repo: parsed.repo && parsed.repo !== "greenkeep" ? parsed.repo : DEFAULT_REPO,
       intensity:
-        parsed.intensity === "days" || parsed.intensity === "counts"
-          ? parsed.intensity
-          : "levels",
+        parsed.intensity === "days" || parsed.intensity === "counts" ? parsed.intensity : "levels",
     };
   } catch {
     return { repo: DEFAULT_REPO, intensity: "levels" };
@@ -204,10 +201,7 @@ export function Workbench() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      PREFS_KEY,
-      JSON.stringify({ repo, intensity } satisfies Prefs),
-    );
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ repo, intensity } satisfies Prefs));
   }, [repo, intensity]);
 
   const userId = user?.id ?? null;
@@ -228,9 +222,7 @@ export function Workbench() {
       .catch((err: unknown) => {
         if (cancelled) return;
         setDest(null);
-        toast.error(
-          err instanceof Error ? err.message : "Could not read the GitHub account",
-        );
+        toast.error(err instanceof Error ? err.message : "Could not read the GitHub account");
       })
       .finally(() => {
         if (!cancelled) setResolving(false);
@@ -277,19 +269,11 @@ export function Workbench() {
 
   const sourceCounts = useMemo(() => mergeCalendars(sources), [sources]);
   const resultCounts = useMemo(
-    () =>
-      mergeCalendars([
-        ...(destCalendar ? [destCalendar] : []),
-        ...sources,
-      ]),
+    () => mergeCalendars([...(destCalendar ? [destCalendar] : []), ...sources]),
     [destCalendar, sources],
   );
   const previewCounts =
-    previewView === "from"
-      ? sourceCounts
-      : previewView === "to"
-        ? destCounts
-        : resultCounts;
+    previewView === "from" ? sourceCounts : previewView === "to" ? destCounts : resultCounts;
   const plan = useMemo(
     () => planCommits(sourceCounts, intensity, from, to),
     [sourceCounts, intensity, from, to],
@@ -297,13 +281,8 @@ export function Workbench() {
   const planned = totalPlanned(plan);
   const daysActive = activeDays(plan);
   const sourceTotal = sources.reduce((sum, s) => sum + s.total, 0);
-  const previewTotal = Object.values(previewCounts).reduce(
-    (sum, n) => sum + n,
-    0,
-  );
-  const previewActiveDays = Object.values(previewCounts).filter(
-    (n) => n > 0,
-  ).length;
+  const previewTotal = Object.values(previewCounts).reduce((sum, n) => sum + n, 0);
+  const previewActiveDays = Object.values(previewCounts).filter((n) => n > 0).length;
 
   async function loadUsers(usernames: string[]) {
     const unique = [...new Set(usernames.map((u) => u.toLowerCase()))];
@@ -438,10 +417,7 @@ export function Workbench() {
   }
 
   const emailAllowed =
-    dest != null &&
-    dest.emails.some(
-      (item) => item.toLowerCase() === email.trim().toLowerCase(),
-    );
+    dest != null && dest.emails.some((item) => item.toLowerCase() === email.trim().toLowerCase());
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
@@ -452,11 +428,8 @@ export function Workbench() {
             <p className="font-brand text-sm font-semibold tracking-[0.18em] uppercase">
               GREENKEEP
             </p>
-            </div>
-          <AuthBar
-            onLogin={() => setAuthMode("login")}
-            onSignup={() => setAuthMode("signup")}
-          />
+          </div>
+          <AuthBar onLogin={() => setAuthMode("login")} onSignup={() => setAuthMode("signup")} />
         </div>
       </header>
 
@@ -467,14 +440,12 @@ export function Workbench() {
               <h1 className="text-2xl font-medium tracking-tight sm:text-4xl">
                 Work contributions.
               </h1>
-              <h1 className="text-2xl font-medium tracking-tight sm:text-4xl">
-                Personal GitHub.
-              </h1>
+              <h1 className="text-2xl font-medium tracking-tight sm:text-4xl">Personal GitHub.</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Some companies care about your GitHub grass, and your current employer may not let you use your
-                own. So when you job search, all of that hard work is going
-                unnoticed. Greenkeep copies all of your contributions to
-                your personal account so you can get the credit you deserve.
+                Some companies care about your GitHub grass, and your current employer may not let
+                you use your own. So when you job search, all of that hard work is going unnoticed.
+                Greenkeep copies all of your contributions to your personal account so you can get
+                the credit you deserve.
               </p>
             </div>
             <GraphLegend />
@@ -496,12 +467,7 @@ export function Workbench() {
               spellCheck={false}
               aria-label="Work GitHub username"
             />
-            <Button
-              type="submit"
-              size="icon"
-              variant="secondary"
-              aria-label="Add account"
-            >
+            <Button type="submit" size="icon" variant="secondary" aria-label="Add account">
               <Plus />
             </Button>
             <Button
@@ -563,10 +529,9 @@ export function Workbench() {
                 <p className="font-mono text-sm tabular-nums">
                   {previewView === "from" && (
                     <>
-                      {sources.length}{" "}
-                      {sources.length === 1 ? "account" : "accounts"} ·{" "}
-                      {sourceTotal.toLocaleString()} contributions · {daysActive}{" "}
-                      days · {planned} commits
+                      {sources.length} {sources.length === 1 ? "account" : "accounts"} ·{" "}
+                      {sourceTotal.toLocaleString()} contributions · {daysActive} days · {planned}{" "}
+                      commits
                     </>
                   )}
                   {previewView === "to" &&
@@ -575,11 +540,8 @@ export function Workbench() {
                       : "Sign in to load your personal graph")}
                   {previewView === "result" && (
                     <>
-                      {previewTotal.toLocaleString()} contributions ·{" "}
-                      {previewActiveDays} days
-                      {destCalendar || sources.length > 0
-                        ? " combined"
-                        : ""}
+                      {previewTotal.toLocaleString()} contributions · {previewActiveDays} days
+                      {destCalendar || sources.length > 0 ? " combined" : ""}
                     </>
                   )}
                 </p>
@@ -646,9 +608,7 @@ export function Workbench() {
                   )}
                 >
                   <p className="text-sm font-medium">{label}</p>
-                  <p className="mt-1 text-2xs text-muted-foreground">
-                    {intensityLabel(mode)}
-                  </p>
+                  <p className="mt-1 text-2xs text-muted-foreground">{intensityLabel(mode)}</p>
                 </button>
               ))}
             </div>
@@ -656,9 +616,8 @@ export function Workbench() {
               <p className="flex items-start gap-1.5 text-2xs text-muted-foreground">
                 <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
                 <span>
-                  Busy days can take a while. If you have thousands of
-                  contributions, it is recommended to download the script
-                  instead.
+                  Busy days can take a while. If you have thousands of contributions, it is
+                  recommended to download the script instead.
                 </span>
               </p>
             )}
@@ -672,9 +631,7 @@ export function Workbench() {
                   {written}/{writeTotal}
                 </span>
               </div>
-              <Progress
-                value={writeTotal ? (written / writeTotal) * 100 : 0}
-              />
+              <Progress value={writeTotal ? (written / writeTotal) * 100 : 0} />
               <Button
                 type="button"
                 variant="ghost"
@@ -702,8 +659,8 @@ export function Workbench() {
           )}
 
           <p className="text-sm text-muted-foreground">
-            We look at your work accounts and create mock commits for you
-            to merge their contribution graphs into your own.
+            We look at your work accounts and create mock commits for you to merge their
+            contribution graphs into your own.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button
@@ -723,11 +680,7 @@ export function Workbench() {
                 setConfirmOpen(true);
               }}
             >
-              {writing ? (
-                <LoaderCircle className="animate-spin" />
-              ) : (
-                <Check />
-              )}
+              {writing ? <LoaderCircle className="animate-spin" /> : <Check />}
               Write {planned.toLocaleString()} commits
             </Button>
             <Button
@@ -781,9 +734,7 @@ export function Workbench() {
                 />
                 <div className="min-w-0">
                   <p className="truncate font-mono text-xs">{dest.login}</p>
-                  <p className="truncate text-2xs text-muted-foreground">
-                    {dest.name}
-                  </p>
+                  <p className="truncate text-2xs text-muted-foreground">{dest.name}</p>
                 </div>
               </div>
             )}
@@ -850,9 +801,8 @@ export function Workbench() {
               <span className="font-mono text-foreground">
                 {dest?.login || destLoginDraft}/{repo || DEFAULT_REPO}
               </span>{" "}
-              and adds {planned.toLocaleString()} empty, backdated commits.
-              GitHub will count them on the signed-in account. Only do this
-              with accounts you own.
+              and adds {planned.toLocaleString()} empty, backdated commits. GitHub will count them
+              on the signed-in account. Only do this with accounts you own.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -877,9 +827,8 @@ export function Workbench() {
           <DialogHeader>
             <DialogTitle>Download the script</DialogTitle>
             <DialogDescription>
-              Pick your platform, then follow the steps after the file
-              downloads. The script writes empty, backdated commits locally
-              and prints the git commands to push.
+              Pick your platform, then follow the steps after the file downloads. The script writes
+              empty, backdated commits locally and prints the git commands to push.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Platform">
@@ -914,11 +863,7 @@ export function Workbench() {
             ))}
           </ol>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setScriptOpen(false)}
-            >
+            <Button type="button" variant="ghost" onClick={() => setScriptOpen(false)}>
               Cancel
             </Button>
             <Button type="button" onClick={downloadScript}>
@@ -945,11 +890,7 @@ function LogoMark() {
     "fill-graph-0",
   ];
   return (
-    <svg
-      viewBox="0 0 32 32"
-      className="size-8 rounded-[3px]"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 32 32" className="size-8 rounded-[3px]" aria-hidden="true">
       <rect width="32" height="32" rx="3" className="fill-foreground" />
       {cells.map((fill, i) => (
         <rect

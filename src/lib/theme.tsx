@@ -29,9 +29,7 @@ export const THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(TH
 export function resolveTheme(theme: Theme): ResolvedTheme {
   if (theme !== "system") return theme;
   if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function readStoredTheme(): Theme {
@@ -101,11 +99,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const theme = useSyncExternalStore(
-    subscribeTheme,
-    readStoredTheme,
-    () => "system" as const,
-  );
+  const theme = useSyncExternalStore(subscribeTheme, readStoredTheme, () => "system" as const);
   const resolved = useSyncExternalStore(
     subscribeResolved,
     () => resolveTheme(readStoredTheme()),
@@ -125,9 +119,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [theme, resolved, cycleTheme],
   );
 
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {

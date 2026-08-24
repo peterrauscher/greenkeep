@@ -1,5 +1,4 @@
-export const GITHUB_USERNAME_RE =
-  /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
+export const GITHUB_USERNAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
 
 export type IntensityMode = "days" | "levels" | "counts";
 
@@ -51,10 +50,7 @@ export function defaultRange(): { from: string; to: string } {
   return { from: isoDate(from), to: isoDate(to) };
 }
 
-export function calendarYearWindows(
-  from: string,
-  to: string,
-): { from: string; to: string }[] {
+export function calendarYearWindows(from: string, to: string): { from: string; to: string }[] {
   const windows: { from: string; to: string }[] = [];
   let start = from;
   while (start <= to) {
@@ -91,16 +87,17 @@ export function mergeCalendars(calendars: SourceCalendar[]): Record<string, numb
   return map;
 }
 
-export function countsToLevels(
-  counts: Record<string, number>,
-): Record<string, number> {
-  const values = Object.values(counts).filter((n) => n > 0).sort((a, b) => a - b);
+export function countsToLevels(counts: Record<string, number>): Record<string, number> {
+  const values = Object.values(counts)
+    .filter((n) => n > 0)
+    .sort((a, b) => a - b);
   if (values.length === 0) {
     const empty: Record<string, number> = {};
     for (const k of Object.keys(counts)) empty[k] = 0;
     return empty;
   }
-  const q = (p: number) => values[Math.min(values.length - 1, Math.floor(p * (values.length - 1)))] ?? 0;
+  const q = (p: number) =>
+    values[Math.min(values.length - 1, Math.floor(p * (values.length - 1)))] ?? 0;
   const q1 = q(0.25);
   const q2 = q(0.5);
   const q3 = q(0.75);
@@ -171,10 +168,7 @@ export function buildWeeks(from: string, to: string): string[][] {
   if (days.length === 0) return [];
   const first = days[0]!;
   const lead = weekdayIndex(first);
-  const padded: (string | null)[] = [
-    ...Array.from({ length: lead }, () => null),
-    ...days,
-  ];
+  const padded: (string | null)[] = [...Array.from({ length: lead }, () => null), ...days];
   const weeks: string[][] = [];
   for (let i = 0; i < padded.length; i += 7) {
     const chunk = padded.slice(i, i + 7);
@@ -202,8 +196,8 @@ export function generateBashScript(opts: {
     `REPO=${shellQuote(opts.repo)}`,
     `GIT_AUTHOR_NAME=${shellQuote(opts.name)}`,
     `GIT_AUTHOR_EMAIL=${shellQuote(opts.email)}`,
-    "GIT_COMMITTER_NAME=\"$GIT_AUTHOR_NAME\"",
-    "GIT_COMMITTER_EMAIL=\"$GIT_AUTHOR_EMAIL\"",
+    'GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"',
+    'GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"',
     "export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL",
     "",
     'DIR="$(mktemp -d /tmp/greenkeep.XXXXXX)"',
@@ -221,7 +215,9 @@ export function generateBashScript(opts: {
       const hour = String(10 + (i % 12)).padStart(2, "0");
       const minute = String((i * 3) % 60).padStart(2, "0");
       const stamp = `${item.date}T${hour}:${minute}:00`;
-      lines.push(`GIT_AUTHOR_DATE="${stamp}" GIT_COMMITTER_DATE="${stamp}" git commit --allow-empty -m "chore: graph ${item.date}"`);
+      lines.push(
+        `GIT_AUTHOR_DATE="${stamp}" GIT_COMMITTER_DATE="${stamp}" git commit --allow-empty -m "chore: graph ${item.date}"`,
+      );
     }
   }
 
@@ -242,7 +238,6 @@ function shellQuote(value: string): string {
 
 export function intensityLabel(mode: IntensityMode): string {
   if (mode === "days") return "One commit per active day";
-  if (mode === "levels")
-    return "Same shade of green, not necessarily the same commit count";
+  if (mode === "levels") return "Same shade of green, not necessarily the same commit count";
   return "One commit per contribution";
 }
