@@ -2,7 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getGithubAccessToken } from "@/lib/auth/github-token.server";
-import type { DayCount, SourceCalendar } from "@/lib/github";
+import {
+  calendarYearWindows,
+  type DayCount,
+  type SourceCalendar,
+} from "@/lib/github";
 
 const GITHUB_API = "https://api.github.com";
 const UA = "Greenkeep/1.0";
@@ -55,23 +59,6 @@ async function ghJson<T>(
     throw new Error(message);
   }
   return json as T;
-}
-
-function yearWindows(from: string, to: string): { from: string; to: string }[] {
-  const windows: { from: string; to: string }[] = [];
-  let start = from;
-  while (start <= to) {
-    const startDate = new Date(`${start}T00:00:00Z`);
-    const endDate = new Date(startDate);
-    endDate.setUTCDate(endDate.getUTCDate() + 364);
-    const end = endDate.toISOString().slice(0, 10);
-    const clamped = end < to ? end : to;
-    windows.push({ from: start, to: clamped });
-    const next = new Date(`${clamped}T00:00:00Z`);
-    next.setUTCDate(next.getUTCDate() + 1);
-    start = next.toISOString().slice(0, 10);
-  }
-  return windows;
 }
 
 function parseContributionHtml(html: string): DayCount[] {
@@ -136,7 +123,7 @@ async function fetchCalendarHtml(
   from: string,
   to: string,
 ): Promise<DayCount[]> {
-  const windows = yearWindows(from, to);
+  const windows = calendarYearWindows(from, to);
   const all: DayCount[] = [];
   for (const win of windows) {
     const url = `https://github.com/users/${encodeURIComponent(login)}/contributions?from=${win.from}&to=${win.to}`;

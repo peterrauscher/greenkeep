@@ -51,6 +51,22 @@ export function defaultRange(): { from: string; to: string } {
   return { from: isoDate(from), to: isoDate(to) };
 }
 
+export function calendarYearWindows(
+  from: string,
+  to: string,
+): { from: string; to: string }[] {
+  const windows: { from: string; to: string }[] = [];
+  let start = from;
+  while (start <= to) {
+    const yearEnd = `${start.slice(0, 4)}-12-31`;
+    const end = yearEnd < to ? yearEnd : to;
+    windows.push({ from: start, to: end });
+    if (end === to) break;
+    start = `${String(Number(start.slice(0, 4)) + 1).padStart(4, "0")}-01-01`;
+  }
+  return windows;
+}
+
 export function eachDay(from: string, to: string): string[] {
   const out: string[] = [];
   let cur = from;
