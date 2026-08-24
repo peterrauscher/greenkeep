@@ -12,8 +12,8 @@ export function AuthScreen({ initialMode = "login" }: { initialMode?: AuthMode }
         <ThemeToggle />
       </div>
       <div className="w-full max-w-sm rounded-xl bg-card p-6 ring-1 ring-border">
-        <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
-          Greenkeep
+        <p className="font-brand text-2xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+          GREENKEEP
         </p>
         <h1 className="mt-2 text-xl font-medium tracking-tight">
           {isSignup ? "Create an account" : "Log in"}

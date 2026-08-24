@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Download, Github, LoaderCircle, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { Check, CircleAlert, Download, Github, LoaderCircle, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { AuthBar, AuthDialog, type AuthMode } from "@/components/auth-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import {
   activeDays,
   defaultRange,
@@ -45,6 +44,79 @@ const MAX_SOURCES = 8;
 
 type PreviewView = "from" | "to" | "result";
 
+type ScriptPlatform = "macos" | "linux" | "windows";
+
+function detectScriptPlatform(): ScriptPlatform {
+  if (typeof navigator === "undefined") return "macos";
+  let hint = "";
+  if ("userAgentData" in navigator) {
+    const data = navigator.userAgentData;
+    if (data && typeof data === "object" && "platform" in data) {
+      const platform = data.platform;
+      if (typeof platform === "string") hint = platform;
+    }
+  }
+  const hay = `${hint} ${navigator.platform} ${navigator.userAgent}`.toLowerCase();
+  if (/\bwin/.test(hay)) return "windows";
+  if (/\blinux\b/.test(hay) && !/\bandroid\b/.test(hay)) return "linux";
+  return "macos";
+}
+
+const SCRIPT_PLATFORMS: { id: ScriptPlatform; label: string }[] = [
+  { id: "macos", label: "macOS" },
+  { id: "linux", label: "Linux" },
+  { id: "windows", label: "Windows" },
+];
+
+
+const SCRIPT_STEPS: Record<ScriptPlatform, { title: string; detail?: string }[]> = {
+  macos: [
+    { title: "Open Terminal." },
+    {
+      title: "Go to the folder that received the file.",
+      detail: "cd ~/Downloads",
+    },
+    {
+      title: "Run the script. Install Git first if needed.",
+      detail: "bash greenkeep.sh",
+    },
+    {
+      title:
+        "Create an empty private repo on GitHub with the name in Additional settings, then add the remote and push.",
+    },
+  ],
+  linux: [
+    { title: "Open a terminal." },
+    {
+      title: "Go to the folder that received the file.",
+      detail: "cd ~/Downloads",
+    },
+    {
+      title: "Run the script. Install git if it is missing.",
+      detail: "bash greenkeep.sh",
+    },
+    {
+      title:
+        "Create an empty private repo on GitHub with the name in Additional settings, then add the remote and push.",
+    },
+  ],
+  windows: [
+    { title: "Install Git for Windows if you do not already have Git Bash." },
+    { title: "Open Git Bash." },
+    {
+      title: "Go to the folder that received the file.",
+      detail: "cd ~/Downloads",
+    },
+    {
+      title: "Run the script.",
+      detail: "bash greenkeep.sh",
+    },
+    {
+      title:
+        "Create an empty private repo on GitHub with the name in Additional settings, then add the remote and push.",
+    },
+  ],
+};
 type Dest = {
   login: string;
   name: string;
@@ -107,13 +179,16 @@ export function Workbench() {
   const [intensity, setIntensity] = useState<IntensityMode>("levels");
   const [isPrivate, setIsPrivate] = useState(true);
   const [resolving, setResolving] = useState(false);
-  const [fetching, setFetching] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [scriptOpen, setScriptOpen] = useState(false);
+  const [scriptPlatform, setScriptPlatform] = useState<ScriptPlatform>("macos");
   const [writing, setWriting] = useState(false);
   const [written, setWritten] = useState(0);
   const [writeTotal, setWriteTotal] = useState(0);
   const [repoUrl, setRepoUrl] = useState<string | null>(null);
   const abortRef = useRef(false);
+  const sourceLoginsRef = useRef<string[]>([]);
+  const loadGen = useRef(0);
   const [previewView, setPreviewView] = useState<PreviewView>("result");
   const { user, isPending: authPending } = useCurrentUserState();
 
@@ -148,9 +223,7 @@ export function Workbench() {
         if (cancelled) return;
         setDest(githubUser);
         setDestLoginDraft(githubUser.login);
-        setEmail(
-          githubUser.email || `${githubUser.login}@users.noreply.github.com`,
-        );
+        setEmail(githubUser.email ?? "");
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -187,6 +260,15 @@ export function Workbench() {
       cancelled = true;
     };
   }, [destLogin, from, to]);
+
+  sourceLoginsRef.current = sources.map((s) => s.login);
+  useEffect(() => {
+    const logins = sourceLoginsRef.current;
+    if (logins.length === 0) return;
+    void loadUsers(logins);
+    // Range change only. Adding an account still goes through addSource.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadUsers closes over from/to
+  }, [from, to]);
 
   const destCounts = useMemo(
     () => (destCalendar ? mergeCalendars([destCalendar]) : {}),
@@ -226,7 +308,7 @@ export function Workbench() {
   async function loadUsers(usernames: string[]) {
     const unique = [...new Set(usernames.map((u) => u.toLowerCase()))];
     if (unique.length === 0) return;
-    setFetching(true);
+    const gen = ++loadGen.current;
     setLoadingLogins(unique);
     try {
       const calendars = await fetchSourceCalendars({
@@ -236,16 +318,17 @@ export function Workbench() {
           to,
         },
       });
+      if (gen !== loadGen.current) return;
       setSources((prev) => {
         const next = new Map(prev.map((s) => [s.login.toLowerCase(), s]));
         for (const cal of calendars) next.set(cal.login.toLowerCase(), cal);
         return [...next.values()];
       });
     } catch (err) {
+      if (gen !== loadGen.current) return;
       toast.error(err instanceof Error ? err.message : "Could not load graphs");
     } finally {
-      setFetching(false);
-      setLoadingLogins([]);
+      if (gen === loadGen.current) setLoadingLogins([]);
     }
   }
 
@@ -289,6 +372,7 @@ export function Workbench() {
     a.download = "greenkeep.sh";
     a.click();
     URL.revokeObjectURL(url);
+    setScriptOpen(false);
     toast.success("Downloaded greenkeep.sh");
   }
 
@@ -303,8 +387,8 @@ export function Workbench() {
       return;
     }
     const mail = email.trim();
-    if (!mail.includes("@")) {
-      toast.error("Set the commit email that GitHub will count");
+    if (!emailAllowed) {
+      toast.error("Use a verified email from your GitHub account");
       return;
     }
     const specs = expandPlan(plan);
@@ -353,22 +437,22 @@ export function Workbench() {
     }
   }
 
-  const destLabel = dest?.login || destLoginDraft || "destination";
+  const emailAllowed =
+    dest != null &&
+    dest.emails.some(
+      (item) => item.toLowerCase() === email.trim().toLowerCase(),
+    );
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3">
-          <LogoMark />
-          <div className="leading-tight">
-            <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
-              Greenkeep
+      <header className="border-b border-border">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <LogoMark />
+            <p className="font-brand text-sm font-semibold tracking-[0.18em] uppercase">
+              GREENKEEP
             </p>
-            <p className="text-sm font-medium">Work history, kept</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
+            </div>
           <AuthBar
             onLogin={() => setAuthMode("login")}
             onSignup={() => setAuthMode("signup")}
@@ -376,66 +460,78 @@ export function Workbench() {
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col lg:flex-row">
-        <aside className="order-2 flex w-full flex-col gap-6 border-t border-border p-4 sm:p-6 lg:order-1 lg:w-80 lg:shrink-0 lg:border-r lg:border-t-0">
-          <section className="flex flex-col gap-3">
-            <div className="flex items-end justify-between gap-2">
-              <div>
-                <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
-                  01
-                </p>
-                <h2 className="text-sm font-medium">Work accounts</h2>
-              </div>
-              <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                {sources.length}/{MAX_SOURCES}
-              </span>
-            </div>
-            <form
-              className="flex gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                addSource();
-              }}
-            >
-              <Input
-                value={draftUser}
-                onChange={(e) => setDraftUser(e.target.value)}
-                placeholder="Work GitHub username"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-                aria-label="Work GitHub username"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                variant="secondary"
-                aria-label="Add account"
-              >
-                <Plus />
-              </Button>
-            </form>
-            {sources.length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Add the work GitHub accounts whose public graphs should
-                follow you home.
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+        <main className="flex min-w-0 flex-1 flex-col gap-6 p-4 sm:p-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <h1 className="text-2xl font-medium tracking-tight sm:text-4xl">
+                Work contributions.
+              </h1>
+              <h1 className="text-2xl font-medium tracking-tight sm:text-4xl">
+                Personal GitHub.
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Some companies care about your GitHub grass, and your current employer may not let you use your
+                own. So when you job search, all of that hard work is going
+                unnoticed. Greenkeep copies all of your contributions to
+                your personal account so you can get the credit you deserve.
               </p>
-            )}
-            <ul className="flex flex-col gap-2">
+            </div>
+            <GraphLegend />
+          </div>
+
+          <form
+            className="flex max-w-sm gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              addSource();
+            }}
+          >
+            <Input
+              value={draftUser}
+              onChange={(e) => setDraftUser(e.target.value)}
+              placeholder="Work GitHub username"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label="Work GitHub username"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              variant="secondary"
+              aria-label="Add account"
+            >
+              <Plus />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="hover:bg-destructive hover:text-destructive-foreground"
+              disabled={sources.length === 0}
+              aria-label="Clear work accounts"
+              onClick={() => setSources([])}
+            >
+              <Trash2 />
+            </Button>
+          </form>
+          {(sources.length > 0 || loadingLogins.length > 0) && (
+            <ul className="flex flex-wrap gap-2">
               {sources.map((source) => (
                 <li
                   key={source.login}
-                  className="flex items-center gap-3 rounded-lg bg-card p-2 pr-1 ring-1 ring-border"
+                  className="flex min-w-0 items-center gap-2 rounded-lg bg-card p-2 pr-1 ring-1 ring-border"
                 >
                   <img
                     src={source.avatarUrl}
                     alt=""
-                    className="size-8 rounded-md"
+                    className="size-8 shrink-0 rounded-md"
                     width={32}
                     height={32}
                     referrerPolicy="no-referrer"
                   />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 max-w-[10rem]">
                     <p className="truncate font-mono text-xs">{source.login}</p>
                     <p className="truncate text-2xs tabular-nums text-muted-foreground">
                       {source.total.toLocaleString()} contributions
@@ -459,159 +555,6 @@ export function Workbench() {
                 </li>
               )}
             </ul>
-          </section>
-
-          <Separator />
-
-          <section className="flex flex-col gap-3">
-            <div>
-              <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
-                02
-              </p>
-              <h2 className="text-sm font-medium">Date range</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="from">From</Label>
-                <Input
-                  id="from"
-                  type="date"
-                  value={from}
-                  max={to}
-                  onChange={(e) => setFrom(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="to">To</Label>
-                <Input
-                  id="to"
-                  type="date"
-                  value={to}
-                  min={from}
-                  onChange={(e) => setTo(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="self-start"
-              disabled={sources.length === 0 || fetching}
-              onClick={() => void loadUsers(sources.map((s) => s.login))}
-            >
-              <RefreshCw className={cn(fetching && "animate-spin")} />
-              Reload range
-            </Button>
-          </section>
-
-          <Separator />
-
-          <section className="flex flex-col gap-3">
-            <div>
-              <p className="text-2xs font-medium tracking-widest text-muted-foreground uppercase">
-                03
-              </p>
-              <h2 className="text-sm font-medium">Personal account</h2>
-            </div>
-            {dest ? (
-              <div className="flex items-center gap-3 rounded-lg bg-card p-2 ring-1 ring-border">
-                <img
-                  src={dest.avatarUrl}
-                  alt=""
-                  className="size-8 rounded-md"
-                  width={32}
-                  height={32}
-                  referrerPolicy="no-referrer"
-                />
-                <div className="min-w-0">
-                  <p className="truncate font-mono text-xs">{dest.login}</p>
-                  <p className="truncate text-2xs text-muted-foreground">
-                    {dest.name}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-2xs text-muted-foreground">
-                Sign in with the personal GitHub that should keep the
-                squares. We write as that user.
-              </p>
-            )}
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="repo">Private repo</Label>
-              <Input
-                id="repo"
-                value={repo}
-                onChange={(e) => setRepo(e.target.value)}
-                placeholder={DEFAULT_REPO}
-                autoCapitalize="off"
-                spellCheck={false}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Commit email</Label>
-              <Input
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@users.noreply.github.com"
-                inputMode="email"
-              />
-              <p className="text-2xs text-muted-foreground">
-                Must be a verified address on {destLabel}, or GitHub will not
-                paint the squares.
-              </p>
-            </div>
-            <label className="flex min-h-10 items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={isPrivate}
-                onChange={(e) => setIsPrivate(e.target.checked)}
-                className="size-4 rounded border-input accent-primary"
-              />
-              Keep the repo private
-            </label>
-          </section>
-        </aside>
-
-        <main className="order-1 flex min-w-0 flex-1 flex-col gap-6 p-4 sm:p-8 lg:order-2">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-xl">
-              <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">
-                Bring your work history home.
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Company GitHub stays at work. Greenkeep reads that public
-                graph and writes empty, backdated commits to a private repo
-                on your personal account.
-              </p>
-            </div>
-            <GraphLegend />
-          </div>
-
-          {sources.length === 0 && (
-            <form
-              className="flex flex-col gap-2 lg:hidden"
-              onSubmit={(e) => {
-                e.preventDefault();
-                addSource();
-              }}
-            >
-              <div className="flex gap-2">
-                <Input
-                  value={draftUser}
-                  onChange={(e) => setDraftUser(e.target.value)}
-                  placeholder="Work GitHub username"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  aria-label="Work GitHub username"
-                />
-                <Button type="submit" size="icon" variant="secondary" aria-label="Add account">
-                  <Plus />
-                </Button>
-              </div>
-            </form>
           )}
 
           <section className="rounded-xl bg-card p-4 ring-1 ring-border sm:p-5">
@@ -653,7 +596,7 @@ export function Workbench() {
                     [
                       ["from", "Work"],
                       ["to", "Personal"],
-                      ["result", "After"],
+                      ["result", "Merged"],
                     ] as const
                   ).map(([id, label]) => (
                     <button
@@ -710,8 +653,13 @@ export function Workbench() {
               ))}
             </div>
             {intensity === "counts" && (
-              <p className="text-2xs text-muted-foreground">
-                Busy days can take a while.
+              <p className="flex items-start gap-1.5 text-2xs text-muted-foreground">
+                <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                <span>
+                  Busy days can take a while. If you have thousands of
+                  contributions, it is recommended to download the script
+                  instead.
+                </span>
               </p>
             )}
           </section>
@@ -753,6 +701,10 @@ export function Workbench() {
             </a>
           )}
 
+          <p className="text-sm text-muted-foreground">
+            We look at your work accounts and create mock commits for you
+            to merge their contribution graphs into your own.
+          </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button
               type="button"
@@ -783,23 +735,107 @@ export function Workbench() {
               variant="outline"
               className="min-h-11"
               disabled={planned === 0}
-              onClick={downloadScript}
+              onClick={() => {
+                setScriptPlatform(detectScriptPlatform());
+                setScriptOpen(true);
+              }}
             >
               <Download />
               Download script
             </Button>
-            {sources.length > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11"
-                onClick={() => setSources([])}
-              >
-                <Trash2 />
-                Clear work accounts
-              </Button>
-            )}
           </div>
+
+          <section className="flex flex-col gap-5">
+            <h2 className="text-sm font-medium">Additional settings</h2>
+            <div className="grid w-full max-w-sm grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="from">From</Label>
+                <Input
+                  id="from"
+                  type="date"
+                  value={from}
+                  max={to}
+                  onChange={(e) => setFrom(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="to">To</Label>
+                <Input
+                  id="to"
+                  type="date"
+                  value={to}
+                  min={from}
+                  onChange={(e) => setTo(e.target.value)}
+                />
+              </div>
+            </div>
+            {dest && (
+              <div className="flex max-w-sm items-center gap-3 rounded-lg bg-card p-2 ring-1 ring-border">
+                <img
+                  src={dest.avatarUrl}
+                  alt=""
+                  className="size-8 rounded-md"
+                  width={32}
+                  height={32}
+                  referrerPolicy="no-referrer"
+                />
+                <div className="min-w-0">
+                  <p className="truncate font-mono text-xs">{dest.login}</p>
+                  <p className="truncate text-2xs text-muted-foreground">
+                    {dest.name}
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="flex max-w-sm flex-col gap-1.5">
+              <Label htmlFor="repo">Repository for commits</Label>
+              <Input
+                id="repo"
+                value={repo}
+                onChange={(e) => setRepo(e.target.value)}
+                placeholder={DEFAULT_REPO}
+                autoCapitalize="off"
+                spellCheck={false}
+              />
+            </div>
+            <div className="flex max-w-sm flex-col gap-1.5">
+              <Label htmlFor="email">Commit email</Label>
+              <Input
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={dest?.email ?? "you@example.com"}
+                inputMode="email"
+                aria-invalid={dest != null && !emailAllowed}
+              />
+              {dest != null && !emailAllowed && (
+                <p className="text-2xs text-muted-foreground">
+                  Not a verified email on this GitHub account.{" "}
+                  <a
+                    href="https://github.com/settings/emails"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-foreground underline underline-offset-4"
+                  >
+                    Review emails on GitHub
+                  </a>
+                </p>
+              )}
+            </div>
+            <label className="flex min-h-10 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="size-4 rounded border-input accent-primary"
+              />
+              Keep the repo private
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Theme</span>
+              <ThemeToggle />
+            </div>
+          </section>
         </main>
       </div>
 
@@ -835,35 +871,97 @@ export function Workbench() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={scriptOpen} onOpenChange={setScriptOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Download the script</DialogTitle>
+            <DialogDescription>
+              Pick your platform, then follow the steps after the file
+              downloads. The script writes empty, backdated commits locally
+              and prints the git commands to push.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Platform">
+            {SCRIPT_PLATFORMS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={scriptPlatform === id}
+                onClick={() => setScriptPlatform(id)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-150",
+                  scriptPlatform === id
+                    ? "bg-muted text-foreground ring-1 ring-foreground/20"
+                    : "text-muted-foreground ring-1 ring-border hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <ol className="flex list-decimal flex-col gap-3 pl-4 text-sm">
+            {SCRIPT_STEPS[scriptPlatform].map((step, index) => (
+              <li key={`${scriptPlatform}-${index}`} className="pl-1">
+                <p>{step.title}</p>
+                {step.detail ? (
+                  <code className="mt-1 block rounded-md bg-muted px-2 py-1 font-mono text-2xs">
+                    {step.detail}
+                  </code>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setScriptOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={downloadScript}>
+              <Download />
+              Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function LogoMark() {
+  const cells = [
+    "fill-graph-4",
+    "fill-graph-3",
+    "fill-graph-2",
+    "fill-graph-3",
+    "fill-graph-2",
+    "fill-graph-1",
+    "fill-graph-2",
+    "fill-graph-1",
+    "fill-graph-0",
+  ];
   return (
     <svg
       viewBox="0 0 32 32"
-      className="size-8 rounded-md"
+      className="size-8 rounded-[3px]"
       aria-hidden="true"
     >
-      <rect width="32" height="32" rx="7" className="fill-card" />
-      <g className="fill-graph-0">
-        <rect x="6" y="6" width="4" height="4" rx="0.7" />
-        <rect x="11.3" y="6" width="4" height="4" rx="0.7" />
-        <rect x="16.6" y="6" width="4" height="4" rx="0.7" />
-        <rect x="21.9" y="6" width="4" height="4" rx="0.7" />
-        <rect x="6" y="11.3" width="4" height="4" rx="0.7" />
-        <rect x="21.9" y="21.9" width="4" height="4" rx="0.7" />
-      </g>
-      <rect x="11.3" y="6" width="4" height="4" rx="0.7" className="fill-graph-1" />
-      <rect x="16.6" y="6" width="4" height="4" rx="0.7" className="fill-graph-3" />
-      <rect x="6" y="11.3" width="4" height="4" rx="0.7" className="fill-graph-2" />
-      <rect x="11.3" y="11.3" width="4" height="4" rx="0.7" className="fill-graph-4" />
-      <rect x="21.9" y="11.3" width="4" height="4" rx="0.7" className="fill-graph-1" />
-      <rect x="16.6" y="16.6" width="4" height="4" rx="0.7" className="fill-graph-2" />
-      <rect x="21.9" y="16.6" width="4" height="4" rx="0.7" className="fill-graph-3" />
-      <rect x="11.3" y="21.9" width="4" height="4" rx="0.7" className="fill-graph-1" />
-      <rect x="16.6" y="21.9" width="4" height="4" rx="0.7" className="fill-graph-4" />
+      <rect width="32" height="32" rx="3" className="fill-foreground" />
+      {cells.map((fill, i) => (
+        <rect
+          key={i}
+          x={4 + (i % 3) * 8.5}
+          y={4 + Math.floor(i / 3) * 8.5}
+          width="7"
+          height="7"
+          rx="0.75"
+          className={fill}
+        />
+      ))}
     </svg>
   );
 }

@@ -1,20 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#0c0c0c"/>
-  <!-- 4×4 contribution heatmap, 5px cells, 2px gutters, 3px inset -->
-  <rect x="3" y="3" width="5" height="5" rx="1" fill="#161616"/>
-  <rect x="10" y="3" width="5" height="5" rx="1" fill="#0e4429"/>
-  <rect x="17" y="3" width="5" height="5" rx="1" fill="#161616"/>
-  <rect x="24" y="3" width="5" height="5" rx="1" fill="#006d32"/>
-  <rect x="3" y="10" width="5" height="5" rx="1" fill="#0e4429"/>
-  <rect x="10" y="10" width="5" height="5" rx="1" fill="#26a641"/>
-  <rect x="17" y="10" width="5" height="5" rx="1" fill="#006d32"/>
-  <rect x="24" y="10" width="5" height="5" rx="1" fill="#3fb950"/>
-  <rect x="3" y="17" width="5" height="5" rx="1" fill="#006d32"/>
-  <rect x="10" y="17" width="5" height="5" rx="1" fill="#3fb950"/>
-  <rect x="17" y="17" width="5" height="5" rx="1" fill="#3fb950"/>
-  <rect x="24" y="17" width="5" height="5" rx="1" fill="#26a641"/>
-  <rect x="3" y="24" width="5" height="5" rx="1" fill="#161616"/>
-  <rect x="10" y="24" width="5" height="5" rx="1" fill="#006d32"/>
-  <rect x="17" y="24" width="5" height="5" rx="1" fill="#26a641"/>
-  <rect x="24" y="24" width="5" height="5" rx="1" fill="#3fb950"/>
+  <style>
+    .p { fill: #141615; }
+    .g0 { fill: #ebedf0; }
+    .g1 { fill: #9be9a8; }
+    .g2 { fill: #40c463; }
+    .g3 { fill: #30a14e; }
+    .g4 { fill: #216e39; }
+    @media (prefers-color-scheme: dark) {
+      .p { fill: #ededed; }
+      .g0 { fill: #2a2a2a; }
+      .g1 { fill: #0e4429; }
+      .g2 { fill: #006d32; }
+      .g3 { fill: #26a641; }
+      .g4 { fill: #3fb950; }
+    }
+  </style>
+  <rect class="p" width="32" height="32" rx="3"/>
+  <rect class="g4" x="4" y="4" width="7" height="7" rx="0.75"/>
+  <rect class="g3" x="12.5" y="4" width="7" height="7" rx="0.75"/>
+  <rect class="g2" x="21" y="4" width="7" height="7" rx="0.75"/>
+  <rect class="g3" x="4" y="12.5" width="7" height="7" rx="0.75"/>
+  <rect class="g2" x="12.5" y="12.5" width="7" height="7" rx="0.75"/>
+  <rect class="g1" x="21" y="12.5" width="7" height="7" rx="0.75"/>
+  <rect class="g2" x="4" y="21" width="7" height="7" rx="0.75"/>
+  <rect class="g1" x="12.5" y="21" width="7" height="7" rx="0.75"/>
+  <rect class="g0" x="21" y="21" width="7" height="7" rx="0.75"/>
 </svg>

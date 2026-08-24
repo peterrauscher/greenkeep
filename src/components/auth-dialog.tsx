@@ -120,7 +120,7 @@ export function AuthBar({
   }
   if (user) {
     return (
-      <div className="flex min-h-10 max-w-xs items-center rounded-md border border-border bg-card px-2">
+      <div className="flex min-h-10 items-center rounded-md border border-border bg-card px-2">
         <UserButton />
       </div>
     );

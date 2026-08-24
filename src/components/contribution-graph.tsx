@@ -73,7 +73,7 @@ export function ContributionGraph({
 
   return (
     <div className={cn("relative", className)}>
-      <div className="overflow-x-auto overscroll-x-contain pb-1">
+      <div className="graph-scroll overflow-x-auto overscroll-x-contain pb-1">
         <div className={cn("inline-flex", compact ? "gap-1.5" : "gap-2")}>
           {!compact && (
             <div className="flex flex-col justify-end gap-1 pt-5">
@@ -185,7 +185,7 @@ export function ContributionGraph({
 export function GraphLegend() {
   return (
     <div className="flex items-center gap-1.5 text-tiny text-muted-foreground">
-      <span>Less</span>
+      <span>Fewer</span>
       {LEVEL_CLASS.map((cls) => (
         <span key={cls} className={cn("size-2.5 rounded-sm", cls)} />
       ))}

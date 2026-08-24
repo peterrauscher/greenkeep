@@ -16,11 +16,15 @@ export const THEME_COLOR = {
   light: "#f3f4f3",
   dark: "#0c0c0c",
 } as const;
+export const THEME_FAVICON = {
+  light: "/favicon-light.svg",
+  dark: "/favicon-dark.svg",
+} as const;
 
 const THEMES: Theme[] = ["system", "light", "dark"];
 const listeners = new Set<() => void>();
 
-export const THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var s=localStorage.getItem(k);var t=s==="light"||s==="dark"?s:(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");var r=document.documentElement;r.classList.toggle("dark",t==="dark");r.style.colorScheme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?${JSON.stringify(THEME_COLOR.dark)}:${JSON.stringify(THEME_COLOR.light)});}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`;
+export const THEME_BOOTSTRAP_SCRIPT = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var s=localStorage.getItem(k);var t=s==="light"||s==="dark"?s:(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");var r=document.documentElement;r.classList.toggle("dark",t==="dark");r.style.colorScheme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?${JSON.stringify(THEME_COLOR.dark)}:${JSON.stringify(THEME_COLOR.light)});var i=document.querySelector('link[rel="icon"]');if(i)i.setAttribute("href",t==="dark"?${JSON.stringify(THEME_FAVICON.dark)}:${JSON.stringify(THEME_FAVICON.light)});}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`;
 
 export function resolveTheme(theme: Theme): ResolvedTheme {
   if (theme !== "system") return theme;
@@ -50,6 +54,8 @@ export function applyTheme(theme: Theme): ResolvedTheme {
   root.style.colorScheme = resolved;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLOR[resolved]);
+  const icon = document.querySelector('link[rel="icon"]');
+  if (icon) icon.setAttribute("href", THEME_FAVICON[resolved]);
   return resolved;
 }
 
