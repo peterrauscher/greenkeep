@@ -26,6 +26,8 @@ Format all code with Prettier before commit. Untracked research dirs (`competito
 
 Conventional Commits. `feat`/`fix`/`chore`/`ci`/`docs`. Imperative, lowercase, no period.
 
+Branches mirror commit types: `<type>/<short-desc>`. Examples `feat/tunnel-deploy`, `fix/lockfile-sync`, `docs/agents-flow`. No official standard, stay consistent.
+
 ## Deploy
 
 `main` protected. All changes via PR, no direct push. No approval needed, merge when LGTM. Quality check must pass on PR. Merge to `main` auto-deploys. Workflow `.github/workflows/deploy.yml`:
