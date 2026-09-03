@@ -1,0 +1,68 @@
+name: Deploy to htpc
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-htpc
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy to htpc
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 100.103.20.24
+          username: htpc
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
+            cd ~/greenkeep
+
+            echo "=== Pulling main ==="
+            git fetch origin
+            git checkout --force main
+            git reset --hard origin/main
+            git clean -fd
+
+            echo "=== Rebuilding and restarting services ==="
+            docker compose --env-file .env.production up -d --build
+
+            echo "=== Health check ==="
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if docker compose --env-file .env.production exec -T app \
+                node -e "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))" \
+                && docker compose --env-file .env.production ps --status running --services | grep -qx cloudflared; then
+                echo "Deploy successful — app healthy, tunnel up"
+                exit 0
+              fi
+              echo "Waiting for app/tunnel... attempt $i/10"
+              sleep 3
+            done
+            echo "ERROR: health check failed after 10 retries" >&2
+            docker compose --env-file .env.production ps
+            docker compose --env-file .env.production logs --no-color --tail 80 app cloudflared
+            exit 1
+
+      - name: Verify public HTTPS
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 20 https://greenkeep.xyz/ | grep -q "<title>Greenkeep</title>"
+          echo "https://greenkeep.xyz is live"

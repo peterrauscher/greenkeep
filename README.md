@@ -91,9 +91,18 @@ nameservers with the two assigned by Cloudflare. In **Networking → Tunnels**:
 
 ### Deploy
 
-Copy the checkout to `/home/htpc/greenkeep`, excluding `.git`, `node_modules`,
-and local `.env` files. Keep the populated `.env.production` beside
-`compose.yaml`, then:
+Merges to `main` run `.github/workflows/deploy.yml`. The runner joins Tailscale
+(`tag:ci`), SSHs to the HTPC, resets `/home/htpc/greenkeep` to `origin/main`,
+and runs `docker compose --env-file .env.production up -d --build`.
+`.env.production` is gitignored and survives the reset.
+
+Repo secrets (same names as autohired):
+
+- `TAILSCALE_OAUTH_CLIENT_ID`
+- `TAILSCALE_OAUTH_SECRET`
+- `DEPLOY_SSH_KEY`
+
+Manual fallback on the HTPC:
 
 ```bash
 docker compose --env-file .env.production up -d --build
@@ -102,9 +111,8 @@ docker compose --env-file .env.production ps
 
 No host nginx or Certbot configuration is required. Cloudflare owns the public
 DNS and TLS certificate; `cloudflared` makes an outbound-only connection from
-the private Compose network to Cloudflare.
-
-Deploy updates with `docker compose --env-file .env.production up -d --build`.
-Compose waits for PostgreSQL, the app applies pending migrations, and the worker waits for the app
-healthcheck before processing due syncs. The named `postgres_data` volume keeps sync configuration,
-the per-day idempotency ledger, and auth data across rebuilds and container replacement.
+the private Compose network to Cloudflare. Compose waits for PostgreSQL, the app
+applies pending migrations, and the worker waits for the app healthcheck before
+processing due syncs. The named `postgres_data` volume keeps sync configuration,
+the per-day idempotency ledger, and auth data across rebuilds and container
+replacement.
