@@ -28,7 +28,7 @@ Conventional Commits. `feat`/`fix`/`chore`/`ci`/`docs`. Imperative, lowercase, n
 
 ## Deploy
 
-Push to `main` auto-deploys. Workflow `.github/workflows/deploy.yml`:
+`main` protected. All changes via PR, no direct push. No approval needed, merge when LGTM. Quality check must pass on PR. Merge to `main` auto-deploys. Workflow `.github/workflows/deploy.yml`:
 
 1. Runner joins Tailscale (`tag:ci`)
 2. SSH to HTPC (`100.103.20.24`), reset `/home/htpc/greenkeep` to `origin/main`
