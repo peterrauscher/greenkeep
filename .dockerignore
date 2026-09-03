@@ -1,0 +1,17 @@
+.git
+.github
+.husky
+.env
+.env.*
+!.env.example
+.output
+dist
+node_modules
+artifacts
+screenshots
+.local
+.pglite
+*.log
+.DS_Store
+README.md
+banner.jpg

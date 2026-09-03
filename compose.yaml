@@ -1,0 +1,77 @@
+name: greenkeep
+
+services:
+  app:
+    image: greenkeep-app
+    build:
+      context: .
+      args:
+        VITE_REVENUECAT_WEB_API_KEY: ${VITE_REVENUECAT_WEB_API_KEY:-}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgres://greenkeep:${POSTGRES_PASSWORD}@postgres:5432/greenkeep
+    expose:
+      - "3000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  worker:
+    image: greenkeep-app
+    restart: unless-stopped
+    init: true
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      SYNC_WORKER_URL: http://app:3000/api/internal/sync
+      SYNC_WORKER_SECRET: ${SYNC_WORKER_SECRET}
+    command: ["node", "scripts/sync-worker.mjs"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      disable: true
+    security_opt:
+      - no-new-privileges:true
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: greenkeep
+      POSTGRES_USER: greenkeep
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U greenkeep -d greenkeep"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:

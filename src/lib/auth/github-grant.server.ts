@@ -4,7 +4,7 @@ import { GITHUB_PROVIDER_ID } from "./providers";
 
 /**
  * Revoke the GitHub grant (best effort) and wipe the stored access token.
- * Called from the Better Auth session-delete hook so sign-out drops the token.
+ * Sign-out calls this unless an enabled Premium sync still needs the grant.
  */
 export async function dropGithubAccessToken(ctx: AuthContext, userId: string): Promise<void> {
   if (!userId) return;

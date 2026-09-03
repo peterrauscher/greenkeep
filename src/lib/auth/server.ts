@@ -14,6 +14,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
+import { hasEnabledPremiumSync } from "../premium-sync-store.server";
 import { dropGithubAccessToken } from "./github-grant.server";
 import { GITHUB_PROVIDER_ID } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
@@ -95,8 +96,16 @@ export const auth = betterAuth({
         after: async (session) => {
           const userId = session.userId;
           if (typeof userId !== "string" || !userId) return;
-          const ctx = (await auth.$context) as unknown as AuthContext;
-          await dropGithubAccessToken(ctx, userId);
+          let retainGrant = false;
+          try {
+            retainGrant = await hasEnabledPremiumSync(userId);
+          } catch {
+            // A failed status lookup must not weaken the normal sign-out cleanup.
+          }
+          if (!retainGrant) {
+            const ctx = (await auth.$context) as unknown as AuthContext;
+            await dropGithubAccessToken(ctx, userId);
+          }
         },
       },
     },

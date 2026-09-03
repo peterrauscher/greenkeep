@@ -35,8 +35,12 @@ test("non-.sql entries are dropped", () => {
   assert.deepEqual(pendingMigrations(["auth", "README.md"], []), []);
 });
 
-test("the applied auth schema is in the globbed directory", () => {
+test("all application migrations are in the globbed directory", () => {
   const migrationsDir = join(root, "migrations");
-  assert.ok(readdirSync(migrationsDir).includes("0001_auth.sql"));
-  assert.deepEqual(pendingMigrations(readdirSync(migrationsDir), ["0001_auth.sql"]), []);
+  const files = readdirSync(migrationsDir);
+  assert.ok(files.includes("0001_auth.sql"));
+  assert.ok(files.includes("0002_premium_sync.sql"));
+  assert.deepEqual(pendingMigrations(files, ["0001_auth.sql"]), [
+    { name: "0002_premium_sync.sql", path: "0002_premium_sync.sql" },
+  ]);
 });

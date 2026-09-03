@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, CircleAlert, Download, Github, LoaderCircle, Plus, Trash2, X } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  Crown,
+  Download,
+  Github,
+  LoaderCircle,
+  LockKeyhole,
+  Plus,
+  RefreshCw,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AuthBar, AuthDialog, type AuthMode } from "@/components/auth-dialog";
+import { PaywallDialog } from "@/components/paywall-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ContributionGraph, GraphLegend } from "@/components/contribution-graph";
 import { Button } from "@/components/ui/button";
@@ -34,8 +47,17 @@ import {
   fetchSourceCalendars,
   resolveDestination,
 } from "@/lib/github-fn";
+import {
+  disablePremiumSync,
+  getPremiumSync,
+  resumePremiumSync,
+  savePremiumSync,
+} from "@/lib/premium-sync-fn";
+import type { PremiumSyncStatus } from "@/lib/premium-sync-store.server";
 import { cn } from "@/lib/utils";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { PAYMENT_REQUIRED_MESSAGE, PREMIUM_REQUIRED_MESSAGE } from "@/lib/billing/constants";
+import { useRevenueCatAccess } from "@/lib/billing/use-revenuecat";
 
 const PREFS_KEY = "greenkeep-prefs";
 const DEFAULT_REPO = "greenkeep-commit-copies";
@@ -43,8 +65,19 @@ const BATCH = 20;
 const MAX_SOURCES = 8;
 
 type PreviewView = "from" | "to" | "result";
+type PaidAction = "write" | "script" | "sync";
 
 type ScriptPlatform = "macos" | "linux" | "windows";
+
+function formatSyncTimestamp(value: string | null): string {
+  if (!value) return "Not yet";
+  return new Date(value).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 function detectScriptPlatform(): ScriptPlatform {
   if (typeof navigator === "undefined") return "macos";
@@ -168,6 +201,7 @@ export function Workbench() {
   const [sources, setSources] = useState<SourceCalendar[]>([]);
   const [loadingLogins, setLoadingLogins] = useState<string[]>([]);
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  const [paywallIntent, setPaywallIntent] = useState<PaidAction | null>(null);
   const [dest, setDest] = useState<Dest | null>(null);
   const [destCalendar, setDestCalendar] = useState<SourceCalendar | null>(null);
   const [destLoginDraft, setDestLoginDraft] = useState("");
@@ -183,11 +217,15 @@ export function Workbench() {
   const [written, setWritten] = useState(0);
   const [writeTotal, setWriteTotal] = useState(0);
   const [repoUrl, setRepoUrl] = useState<string | null>(null);
+  const [premiumSync, setPremiumSync] = useState<PremiumSyncStatus | null>(null);
+  const [syncStatusLoading, setSyncStatusLoading] = useState(false);
+  const [syncSaving, setSyncSaving] = useState(false);
   const abortRef = useRef(false);
   const sourceLoginsRef = useRef<string[]>([]);
   const loadGen = useRef(0);
   const [previewView, setPreviewView] = useState<PreviewView>("result");
   const { user, isPending: authPending } = useCurrentUserState();
+  const writeAccess = useRevenueCatAccess(user?.id ?? null, user?.primaryEmail ?? null);
 
   useEffect(() => {
     const prefs = loadPrefs();
@@ -205,6 +243,28 @@ export function Workbench() {
   }, [repo, intensity]);
 
   const userId = user?.id ?? null;
+  useEffect(() => {
+    if (!userId || user?.isDevFallback) {
+      setPremiumSync(null);
+      return;
+    }
+    let cancelled = false;
+    setSyncStatusLoading(true);
+    void getPremiumSync()
+      .then((status) => {
+        if (!cancelled) setPremiumSync(status);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Could not load automatic sync status");
+      })
+      .finally(() => {
+        if (!cancelled) setSyncStatusLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, user?.isDevFallback]);
+
   useEffect(() => {
     if (!userId || user?.isDevFallback) {
       setDest(null);
@@ -332,8 +392,127 @@ export function Workbench() {
   function removeSource(login: string) {
     setSources((prev) => prev.filter((s) => s.login !== login));
   }
+  function handleAutomaticSyncError(error: unknown) {
+    const message = error instanceof Error ? error.message : "Could not update automatic sync";
+    if (message.includes(PREMIUM_REQUIRED_MESSAGE)) {
+      setPaywallIntent("sync");
+      void writeAccess.refresh();
+      return;
+    }
+    toast.error(message);
+  }
+
+  async function saveAutomaticSync() {
+    if (!dest || sources.length === 0 || !emailAllowed) return;
+    setSyncSaving(true);
+    try {
+      const status = await savePremiumSync({
+        data: {
+          sourceUsernames: sources.map((source) => source.login),
+          startDate: from,
+          repo: repo.trim() || DEFAULT_REPO,
+          commitEmail: email.trim(),
+          intensity,
+          isPrivate,
+        },
+      });
+      setPremiumSync(status);
+      toast.success("Daily sync is active. The first run is queued.");
+    } catch (error) {
+      handleAutomaticSyncError(error);
+    } finally {
+      setSyncSaving(false);
+    }
+  }
+
+  async function resumeAutomaticSync() {
+    setSyncSaving(true);
+    try {
+      const status = await resumePremiumSync();
+      setPremiumSync(status);
+      toast.success("Daily sync is active again.");
+    } catch (error) {
+      handleAutomaticSyncError(error);
+    } finally {
+      setSyncSaving(false);
+    }
+  }
+
+  async function disableAutomaticSync() {
+    setSyncSaving(true);
+    try {
+      setPremiumSync(await disablePremiumSync());
+      toast.success("Automatic sync is paused.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not pause automatic sync");
+    } finally {
+      setSyncSaving(false);
+    }
+  }
+
+  async function refreshAutomaticSync() {
+    setSyncStatusLoading(true);
+    try {
+      setPremiumSync(await getPremiumSync());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not refresh sync status");
+    } finally {
+      setSyncStatusLoading(false);
+    }
+  }
+
+  function configureAutomaticSync() {
+    if (authPending) return;
+    if (!user || !dest) {
+      setAuthMode("login");
+      return;
+    }
+    const canResumeSaved = premiumSync != null && !premiumSync.enabled && sources.length === 0;
+    if (!canResumeSaved && sources.length === 0) {
+      toast.error("Add at least one work account before enabling automatic sync");
+      return;
+    }
+    if (!canResumeSaved && !emailAllowed) {
+      toast.error("Use a verified email from your GitHub account");
+      return;
+    }
+    if (canResumeSaved) void resumeAutomaticSync();
+    else void saveAutomaticSync();
+  }
+
+  function requestAutomaticSync() {
+    if (writeAccess.hasPremiumAccess) configureAutomaticSync();
+    else setPaywallIntent("sync");
+  }
+
+  function continuePaidAction(action: PaidAction) {
+    if (action === "sync") {
+      configureAutomaticSync();
+      return;
+    }
+    if (action === "write") {
+      setConfirmOpen(true);
+      return;
+    }
+    setScriptPlatform(detectScriptPlatform());
+    setScriptOpen(true);
+  }
+
+  function requestPaidAction(action: PaidAction) {
+    const unlocked = action === "sync" ? writeAccess.hasPremiumAccess : writeAccess.hasWriteAccess;
+    if (unlocked) {
+      continuePaidAction(action);
+      return;
+    }
+    setPaywallIntent(action);
+  }
 
   function downloadScript() {
+    if (!writeAccess.hasWriteAccess) {
+      setScriptOpen(false);
+      setPaywallIntent("script");
+      return;
+    }
     const owner = dest?.login || destLoginDraft.trim() || "YOUR_USERNAME";
     const name = dest?.name || owner;
     const mail = email || `${owner}@users.noreply.github.com`;
@@ -363,6 +542,11 @@ export function Workbench() {
     if (!dest) {
       toast.error("Sign in with GitHub so we can open the private repo");
       setAuthMode("login");
+      return;
+    }
+    if (!writeAccess.hasWriteAccess) {
+      setConfirmOpen(false);
+      setPaywallIntent("write");
       return;
     }
     const mail = email.trim();
@@ -410,7 +594,14 @@ export function Workbench() {
       toast.success("Commits are on GitHub. The graph can take a few minutes to catch up.");
       setConfirmOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Write failed");
+      const message = err instanceof Error ? err.message : "Write failed";
+      if (message.includes(PAYMENT_REQUIRED_MESSAGE)) {
+        setConfirmOpen(false);
+        setPaywallIntent("write");
+        void writeAccess.refresh();
+      } else {
+        toast.error(message);
+      }
     } finally {
       setWriting(false);
     }
@@ -677,26 +868,141 @@ export function Workbench() {
                   setAuthMode("login");
                   return;
                 }
-                setConfirmOpen(true);
+                requestPaidAction("write");
               }}
             >
-              {writing ? <LoaderCircle className="animate-spin" /> : <Check />}
-              Write {planned.toLocaleString()} commits
+              {writing ? (
+                <LoaderCircle className="animate-spin" />
+              ) : writeAccess.hasWriteAccess ? (
+                <Check />
+              ) : (
+                <LockKeyhole />
+              )}
+              {writeAccess.hasWriteAccess ? "Write" : "Unlock & write"} {planned.toLocaleString()}{" "}
+              commits
             </Button>
             <Button
               type="button"
               variant="outline"
               className="min-h-11"
               disabled={planned === 0}
-              onClick={() => {
-                setScriptPlatform(detectScriptPlatform());
-                setScriptOpen(true);
-              }}
+              onClick={() => requestPaidAction("script")}
             >
-              <Download />
-              Download script
+              {writeAccess.hasWriteAccess ? <Download /> : <LockKeyhole />}
+              {writeAccess.hasWriteAccess ? "Download script" : "Unlock script"}
             </Button>
           </div>
+
+          <section className="rounded-xl bg-card p-4 ring-1 ring-border sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="max-w-2xl">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-2xs font-medium uppercase tracking-wider">
+                    <Crown className="size-3.5" />
+                    Premium
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {writeAccess.premiumProduct?.price ?? "$4.99"}/month
+                  </span>
+                </div>
+                <h2 className="text-base font-medium">Keep your graph synced automatically</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Greenkeep checks the saved work accounts daily and adds only the commits that are
+                  still missing. Premium includes manual writes too.
+                </p>
+              </div>
+
+              {premiumSync?.enabled ? (
+                <span className="flex shrink-0 items-center gap-1.5 text-xs text-graph-4">
+                  <span className="size-1.5 rounded-full bg-current" />
+                  Daily sync active
+                </span>
+              ) : premiumSync ? (
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {premiumSync.disabledReason === "subscription"
+                    ? "Paused · subscription inactive"
+                    : "Paused"}
+                </span>
+              ) : null}
+            </div>
+
+            {premiumSync && (
+              <div className="mt-4 grid gap-3 rounded-lg bg-muted p-3 text-xs sm:grid-cols-3">
+                <div>
+                  <p className="text-2xs uppercase tracking-wider text-muted-foreground">
+                    Last run
+                  </p>
+                  <p className="mt-1 font-mono">
+                    {formatSyncTimestamp(premiumSync.lastCompletedAt)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-2xs uppercase tracking-wider text-muted-foreground">
+                    Next run
+                  </p>
+                  <p className="mt-1 font-mono">
+                    {premiumSync.enabled ? formatSyncTimestamp(premiumSync.nextSyncAt) : "Paused"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-2xs uppercase tracking-wider text-muted-foreground">
+                    Tracked commits
+                  </p>
+                  <p className="mt-1 font-mono">{premiumSync.copiedCommits.toLocaleString()}</p>
+                </div>
+              </div>
+            )}
+
+            {premiumSync?.lastError && (
+              <p className="mt-3 text-xs text-destructive">{premiumSync.lastError}</p>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button type="button" onClick={requestAutomaticSync} disabled={syncSaving}>
+                {syncSaving ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : writeAccess.hasPremiumAccess ? (
+                  <Check />
+                ) : (
+                  <Crown />
+                )}
+                {premiumSync?.enabled
+                  ? "Update automatic sync"
+                  : premiumSync && sources.length === 0
+                    ? "Resume automatic sync"
+                    : writeAccess.hasPremiumAccess
+                      ? "Enable automatic sync"
+                      : `Get Premium · ${writeAccess.premiumProduct?.price ?? "$4.99"}/month`}
+              </Button>
+              {premiumSync && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void refreshAutomaticSync()}
+                  disabled={syncStatusLoading}
+                >
+                  <RefreshCw className={cn(syncStatusLoading && "animate-spin")} />
+                  Refresh status
+                </Button>
+              )}
+              {premiumSync?.enabled && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void disableAutomaticSync()}
+                  disabled={syncSaving}
+                >
+                  Pause
+                </Button>
+              )}
+            </div>
+            <p className="mt-3 text-2xs text-muted-foreground">
+              Saving uses the current work accounts, From date, intensity, repository, and commit
+              email. The first run starts immediately; later runs happen every 24 hours.
+            </p>
+          </section>
 
           <section className="flex flex-col gap-5">
             <h2 className="text-sm font-medium">Additional settings</h2>
@@ -791,6 +1097,19 @@ export function Workbench() {
       </div>
 
       <AuthDialog mode={authMode} onModeChange={setAuthMode} />
+      <PaywallDialog
+        open={paywallIntent != null}
+        onOpenChange={(open) => {
+          if (!open) setPaywallIntent(null);
+        }}
+        access={writeAccess}
+        requiredAccess={paywallIntent === "sync" ? "premium" : "write"}
+        onUnlocked={() => {
+          const action = paywallIntent;
+          setPaywallIntent(null);
+          if (action) continuePaidAction(action);
+        }}
+      />
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
