@@ -64,5 +64,14 @@ jobs:
       - name: Verify public HTTPS
         run: |
           set -euo pipefail
-          curl -fsS --max-time 20 https://greenkeep.xyz/ | grep -q "<title>Greenkeep</title>"
-          echo "https://greenkeep.xyz is live"
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS --max-time 20 https://greenkeep.xyz/ | grep -q "<title>Greenkeep</title>"; then
+              echo "https://greenkeep.xyz is live"
+              exit 0
+            fi
+            echo "Waiting for public HTTPS... attempt $i/10"
+            sleep 3
+          done
+          echo "ERROR: public HTTPS check failed" >&2
+          curl -sS -D - -o /dev/null --max-time 20 https://greenkeep.xyz/ || true
+          exit 1
