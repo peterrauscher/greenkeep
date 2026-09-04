@@ -7,6 +7,6 @@ export const Route = createFileRoute("/login")({ component: Login });
 function Login() {
   const { user, isPending } = useCurrentUserState();
   if (isPending) return <AuthPending />;
-  if (user) return <Navigate to="/" />;
+  if (user) return <Navigate to="/app" />;
   return <AuthScreen />;
 }
