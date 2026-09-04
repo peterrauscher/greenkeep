@@ -5,6 +5,7 @@ import {
   Bookmark,
   Github,
   Heart,
+  LoaderCircle,
   LockKeyhole,
   MessageCircle,
   RefreshCw,
@@ -12,32 +13,14 @@ import {
   Share,
   WandSparkles,
 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { ContributionGraph } from "@/components/contribution-graph";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { GITHUB_PROVIDER_ID, authEnabled, signIn } from "@/lib/auth/client";
+import { COUNTS } from "@/lib/counts";
 
 export const Route = createFileRoute("/")({ component: Landing });
-
-const COUNTS: Record<string, number> = {
-  "2025-09-08": 4,
-  "2025-09-09": 7,
-  "2025-09-15": 2,
-  "2025-09-16": 6,
-  "2025-09-17": 9,
-  "2025-09-22": 3,
-  "2025-09-24": 8,
-  "2025-10-01": 5,
-  "2025-10-06": 7,
-  "2025-10-13": 4,
-  "2025-10-20": 6,
-  "2025-10-27": 9,
-  "2025-11-03": 5,
-  "2025-11-10": 8,
-  "2025-11-17": 3,
-  "2025-12-01": 6,
-  "2025-12-08": 7,
-  "2026-01-12": 5,
-  "2026-02-02": 9,
-};
 
 function Landing() {
   return (
@@ -79,12 +62,7 @@ function Landing() {
             >
               Make history <ArrowRight className="size-4" />
             </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2.5 text-sm font-medium transition active:translate-y-[1px]"
-            >
-              <Github className="size-4" /> Continue with GitHub
-            </Link>
+            <GitHubButton />
           </div>
         </div>
         <div className="rounded-xl bg-card p-5 ring-1 ring-border">
@@ -253,11 +231,37 @@ function Landing() {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 text-sm text-muted-foreground">
           <p className="font-brand text-xs font-bold tracking-[0.18em] uppercase">Greenkeep</p>
-          <Link to="/login" className="hover:text-foreground">
-            Log in
-          </Link>
+          <a
+            href="https://linkedin.com/in/peter-rauscher"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-foreground"
+          >
+            built with ❤️ by Peter
+          </a>
         </div>
       </footer>
     </main>
+  );
+}
+function GitHubButton() {
+  const [pending, setPending] = useState(false);
+  if (!authEnabled) return null;
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() => {
+        setPending(true);
+        void signIn(GITHUB_PROVIDER_ID, { callbackURL: "/app" }).catch((err: unknown) => {
+          setPending(false);
+          toast.error(err instanceof Error ? err.message : "Sign-in failed");
+        });
+      }}
+      className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2.5 text-sm font-medium transition active:translate-y-[1px] disabled:opacity-60"
+    >
+      {pending ? <LoaderCircle className="size-4 animate-spin" /> : <Github className="size-4" />}
+      Continue with GitHub
+    </button>
   );
 }
