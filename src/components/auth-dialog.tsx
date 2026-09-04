@@ -29,7 +29,7 @@ export function AuthForm({ mode, onToggle }: { mode: AuthMode; onToggle: () => v
           disabled={pending !== null}
           onClick={() => {
             setPending(GITHUB_PROVIDER_ID);
-            void signIn(GITHUB_PROVIDER_ID, { callbackURL: "/" }).catch((err: unknown) => {
+            void signIn(GITHUB_PROVIDER_ID, { callbackURL: "/app" }).catch((err: unknown) => {
               setPending(null);
               toast.error(err instanceof Error ? err.message : "Sign-in failed");
             });
