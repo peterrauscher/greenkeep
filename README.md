@@ -1,31 +1,28 @@
-# Greenkeep
+# Greenkeep 🌱
 
-![Greenkeep](banner.jpg)
+![Greenkeep](assets/banner.jpg)
 
-Your work graph, on your own profile.
+Your work GitHub's grass, on your personal profile.
 
-Greenkeep copies a work GitHub history onto your personal account with private backdated commits. The counts come over. The code stays at work.
+Greenkeep copies your work accounts' commit histories onto your personal account using private, backdated commits. The commit counts come over. Your code stays at work.
 
 ## It is a vanity metric. But employers still care.
 
-Hiring managers do look at the grass. When your real work happens on a company org, your personal profile looks empty through no fault of your own. Greenkeep fixes that.
+![Mintlify guy on X yapping](assets/tweet.png)
 
-## Three moves and the graph is yours
+Whichever way you feel about it – hiring managers are taking note. When your real work happens within a company org or enterprise, your personal profile looks empty even though you're shipping. Greenkeep fixes that.
 
-1. **Connect.** Point Greenkeep at the work usernames whose history should follow you. Nothing is written to work repos.
-2. **Preview.** See the merged year before anything is written. Pick the date range and how dark the squares get.
-3. **Keep.** Write once with a script, or turn on the nightly sync and new work days copy over on their own.
+## Three steps and your graph is yours to keep
+
+1. **Connect.** Login with GitHub to your personal account, and point Greenkeep at your work usernames. **Nothing gets written to work repos.**
+2. **Preview.** See the merged result before anything gets written. Pick the date range and how dark the squares get if you prefer.
+3. **Keep.** Sync once, or subscribe so your work gets copied over forever without lifting a finger.
 
 ## Private by design
 
-Greenkeep writes empty commits with backdated authorship into a private repo on your personal account. No code leaves work. Use it for accounts you own.
+Greenkeep writes empty commits into a private repo always on your personal account by default. No code leaves work, and we never read a single line.
 
 ## Plans
 
-- **Free.** Read and merge contribution history, preview the graph.
-- **One-time.** Manual GitHub writes and the local script.
-- **Monthly.** Everything above, plus automatic nightly sync.
-
-## How it was built
-
-Greenkeep is a TanStack Start app (React + Vite) with GitHub OAuth sign-in. It reads contribution calendars through the GitHub API, payments run through RevenueCat, and a small scheduled worker keeps monthly subscribers in sync.
+- **One-week access.** Pay once. Take a week to copy over whatever you need. Useful if you're about to leave a company.
+- **Monthly.** Sync every day, automatically. Don't worry about forgetting before you leave.
