@@ -750,7 +750,7 @@ function Landing() {
                 )}
               >
                 <Sparkles className="size-3.5" />
-                With Greenkeep (Mirrored)
+                With Greenkeep
               </button>
               <button
                 type="button"
@@ -762,26 +762,19 @@ function Landing() {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                Without Greenkeep (Personal only)
+                Without Greenkeep
               </button>
             </div>
           </div>
 
           {/* Interactive Comparison Card */}
           <div className="mx-auto mt-10 max-w-4xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-            <div className="flex flex-col justify-between gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-              <div>
-                <span className="font-mono text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-                  {activeTab === "after"
-                    ? "State: Active Senior Contributor"
-                    : "State: Inactive / Sparse Personal Account"}
-                </span>
-                <h3 className="mt-1 text-xl font-bold text-foreground">
-                  {activeTab === "after"
-                    ? "Work History Fully Mirrored to Personal Profile"
-                    : "Personal Profile Without Corporate Mirroring"}
-                </h3>
-              </div>
+            <div className="flex items-center justify-between border-b border-border pb-5">
+              <span className="font-mono text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                {activeTab === "after"
+                  ? "State: Active Senior Contributor"
+                  : "State: Inactive / Sparse Personal Account"}
+              </span>
               <div className="flex items-center gap-2 font-mono text-sm">
                 <span className="rounded-md bg-muted px-2.5 py-1 font-semibold text-foreground">
                   {activeTab === "after"
@@ -791,7 +784,7 @@ function Landing() {
               </div>
             </div>
 
-            <div className="pt-6">
+            <div className="flex justify-center pt-6">
               <ContributionGraph
                 from="2025-09-01"
                 to="2026-03-01"
@@ -799,27 +792,15 @@ function Landing() {
               />
             </div>
 
-            <div className="mt-6 grid gap-4 rounded-xl bg-muted/40 p-4 sm:grid-cols-2">
-              <div>
-                <p className="font-mono text-xs font-semibold text-muted-foreground">
-                  Recruiter Impression
-                </p>
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  {activeTab === "after"
-                    ? "“Consistent builder shipping daily production code. Strong work ethic and continuous momentum.”"
-                    : "“Appears inactive. Did they stop coding or step away from technical work?”"}
-                </p>
-              </div>
-              <div>
-                <p className="font-mono text-xs font-semibold text-muted-foreground">
-                  Security Status
-                </p>
-                <p className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                  {activeTab === "after"
-                    ? "✓ 0 lines of company code. Strictly empty commits in your private repo."
-                    : "No commits synced."}
-                </p>
-              </div>
+            <div className="mt-6 rounded-xl bg-muted/40 p-4 text-center">
+              <p className="font-mono text-xs font-semibold text-muted-foreground">
+                Recruiter Impression
+              </p>
+              <p className="mx-auto mt-1 text-sm font-medium text-foreground max-w-xl">
+                {activeTab === "after"
+                  ? "“Consistent builder shipping daily production code. Strong work ethic and continuous momentum.”"
+                  : "“Appears inactive. Did they stop coding or step away from technical work?”"}
+              </p>
             </div>
           </div>
 
