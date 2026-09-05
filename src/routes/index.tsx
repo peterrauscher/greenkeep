@@ -772,8 +772,8 @@ function Landing() {
             <div className="flex items-center justify-between border-b border-border pb-5">
               <span className="font-mono text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                 {activeTab === "after"
-                  ? "State: Active Senior Contributor"
-                  : "State: Inactive / Sparse Personal Account"}
+                  ? "Reads: Active Senior Contributor"
+                  : "Reads: Inactive / Sparse Personal Account"}
               </span>
               <div className="flex items-center gap-2 font-mono text-sm">
                 <span className="rounded-md bg-muted px-2.5 py-1 font-semibold text-foreground">
@@ -799,7 +799,7 @@ function Landing() {
               <p className="mx-auto mt-1 text-sm font-medium text-foreground max-w-xl">
                 {activeTab === "after"
                   ? "“Consistent builder shipping daily production code. Strong work ethic and continuous momentum.”"
-                  : "“Appears inactive. Did they stop coding or step away from technical work?”"}
+                  : "“Does this guy even ship? Did they step away from technical work?”"}
               </p>
             </div>
           </div>
@@ -810,8 +810,7 @@ function Landing() {
               Identity Transformation
             </p>
             <p className="mt-1 text-base font-semibold text-foreground">
-              From <span className="text-destructive">“I promise I write code at my day job”</span>{" "}
-              → To{" "}
+              <span className="text-destructive">“I promise I write code at my day job”</span> →{" "}
               <span className="text-emerald-600 dark:text-emerald-400">
                 undeniable visual proof on your profile
               </span>
