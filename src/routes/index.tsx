@@ -155,11 +155,11 @@ function Landing() {
               <a href="#features" className="transition-colors hover:text-foreground">
                 Features
               </a>
-              <a href="#proof" className="transition-colors hover:text-foreground">
-                Social proof
+              <a href="#get-hired" className="transition-colors hover:text-foreground">
+                Get Hired
               </a>
-              <a href="#security" className="transition-colors hover:text-foreground">
-                Security
+              <a href="#privacy" className="transition-colors hover:text-foreground">
+                Privacy
               </a>
             </div>
           </div>
@@ -600,7 +600,7 @@ function Landing() {
           SECTION 5: SOCIAL PROOF — "Let others convince them"
           Job: Transfer trust from existing users / market reality
           ───────────────────────────────────────────────────────────── */}
-      <section className="border-t border-border py-16 sm:py-24" id="proof">
+      <section className="border-t border-border py-16 sm:py-24" id="get-hired">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
             <p className="font-mono text-xs font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
@@ -844,7 +844,7 @@ function Landing() {
           SECTION 7: SECONDARY CTA — "Catch the scrollers"
           Job: Convert users who need one more nudge & clear objections
           ───────────────────────────────────────────────────────────── */}
-      <section className="border-t border-border py-20 sm:py-28" id="security">
+      <section className="border-t border-border py-20 sm:py-28" id="privacy">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <div className="rounded-3xl border border-border bg-linear-to-b from-card to-muted/30 p-8 shadow-md text-center sm:p-12">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 font-mono text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-400">
