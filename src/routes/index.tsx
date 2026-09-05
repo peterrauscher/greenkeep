@@ -901,7 +901,7 @@ function Landing() {
           ───────────────────────────────────────────────────────────── */}
       <footer className="border-t border-border bg-card/60">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-20">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
             {/* Col 1 & 2: Brand and Security Mission */}
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2">
@@ -969,33 +969,6 @@ function Landing() {
                 </li>
                 <li>
                   <PrivacyModal />
-                </li>
-              </ul>
-            </div>
-
-            {/* Col 5: Creator & Social */}
-            <div>
-              <p className="text-xs font-bold tracking-wider uppercase text-foreground">Creator</p>
-              <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
-                <li>
-                  <a
-                    href="https://linkedin.com/in/peter-rauscher"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="transition hover:text-foreground"
-                  >
-                    Built by Peter Rauscher
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/peter-rauscher"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="transition hover:text-foreground"
-                  >
-                    GitHub (@peter-rauscher)
-                  </a>
                 </li>
               </ul>
             </div>
