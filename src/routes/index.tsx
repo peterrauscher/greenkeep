@@ -183,7 +183,7 @@ function Landing() {
       </header>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 1: HERO — "Get email or get scroll"
+          SECTION 1: HERO - "Get email or get scroll"
           Job: Stop the right visitor and drive first preview action
           ───────────────────────────────────────────────────────────── */}
       <section className="relative mx-auto max-w-7xl px-4 pt-16 pb-20 sm:px-6 md:pt-24 md:pb-28">
@@ -194,9 +194,9 @@ function Landing() {
             </h1>
 
             <p className="mt-5 max-w-[48ch] text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Greenkeep mirrors your enterprise and client commit activity onto your personal GitHub
-              profile using empty, backdated commits. Your contribution graph stays green—without a
-              single line of work code leaving your employer.
+              Greenkeep syncs your work, enterprise, or client commit activity with your personal
+              GitHub profile. Your grass stays green without a single line of work code leaving your
+              employer.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -319,7 +319,7 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 2: SUCCESS — "Kill buyer's remorse"
+          SECTION 2: SUCCESS - "Kill buyer's remorse"
           Job: Show this works and reduce post-click anxiety
           ───────────────────────────────────────────────────────────── */}
       <section className="border-y border-border bg-card/40 py-16 sm:py-20" id="how-it-works">
@@ -332,7 +332,7 @@ function Landing() {
               Reclaim years of engineering history in 90 seconds.
             </h2>
             <p className="mx-auto mt-3 max-w-[55ch] text-base text-muted-foreground">
-              A clean, verified mirror that runs in three simple steps—or completely on autopilot.
+              A clean, verified mirror that runs for you on autopilot.
             </p>
           </div>
 
@@ -448,7 +448,7 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 3: PROBLEM-AGITATE — "Make status quo painful"
+          SECTION 3: PROBLEM-AGITATE - "Make status quo painful"
           Job: Increase motivation to change now (The Enterprise Black Hole)
           ───────────────────────────────────────────────────────────── */}
       <section className="py-16 sm:py-24">
@@ -474,7 +474,7 @@ function Landing() {
               <h3 className="mt-4 text-base font-semibold">The SSO Black Hole</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 You design distributed systems, resolve critical production incidents, and push code
-                daily—locked behind corporate enterprise firewalls and private orgs.
+                daily. But it&apos;s all locked behind corporate enterprises and private orgs.
               </p>
             </div>
 
@@ -518,7 +518,7 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 4: VALUE STACK — "Make saying no feel stupid"
+          SECTION 4: VALUE STACK - "Make saying no feel stupid"
           Job: Increase perceived value versus price/effort (The Full Toolkit)
           ───────────────────────────────────────────────────────────── */}
       <section className="border-t border-border bg-card/40 py-16 sm:py-24" id="features">
@@ -597,7 +597,7 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 5: SOCIAL PROOF — "Let others convince them"
+          SECTION 5: SOCIAL PROOF - "Let others convince them"
           Job: Transfer trust from existing users / market reality
           ───────────────────────────────────────────────────────────── */}
       <section className="border-t border-border py-16 sm:py-24" id="get-hired">
@@ -610,8 +610,9 @@ function Landing() {
               Hiring managers screen with their eyes first.
             </h2>
             <p className="mt-3 text-base text-muted-foreground">
-              GitHub grass isn&apos;t proof of code quality—it&apos;s the fastest visual heuristic
-              that someone actually builds things.
+              GitHub grass isn&apos;t proof of code quality, it&apos;s a vanity metric. But
+              it&apos;s a fast visual heuristic that you actually build things, when recruiters
+              spend less than 30 seconds looking at your application.
             </p>
           </div>
 
@@ -720,7 +721,7 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 6: TRANSFORMATION — "Make outcome tangible"
+          SECTION 6: TRANSFORMATION - "Make outcome tangible"
           Job: Visualize future state with Before vs. After
           ───────────────────────────────────────────────────────────── */}
       <section className="border-t border-border bg-card/40 py-16 sm:py-24">
@@ -821,7 +822,7 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 7: SECONDARY CTA — "Catch the scrollers"
+          SECTION 7: SECONDARY CTA - "Catch the scrollers"
           Job: Convert users who need one more nudge & clear objections
           ───────────────────────────────────────────────────────────── */}
       <section className="border-t border-border py-20 sm:py-28" id="privacy">
@@ -876,7 +877,7 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 8: FOOTER — "Professional legitimacy"
+          SECTION 8: FOOTER - "Professional legitimacy"
           Job: Close trust gaps and satisfy compliance expectations
           ───────────────────────────────────────────────────────────── */}
       <footer className="border-t border-border bg-card/60">
