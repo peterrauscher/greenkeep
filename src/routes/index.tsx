@@ -997,12 +997,6 @@ function Landing() {
                     GitHub (@peter-rauscher)
                   </a>
                 </li>
-                <li>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                    <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                    All Systems Operational
-                  </span>
-                </li>
               </ul>
             </div>
           </div>
