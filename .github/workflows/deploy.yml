@@ -65,7 +65,8 @@ jobs:
         run: |
           set -euo pipefail
           for i in 1 2 3 4 5 6 7 8 9 10; do
-            if curl -fsS --max-time 20 https://greenkeep.xyz/ | grep -q "<title>Greenkeep</title>"; then
+            # Buffer the body: `curl | grep -q` closes the pipe early, curl exits 23, pipefail fails.
+            if body=$(curl -fsS --max-time 20 https://greenkeep.xyz/) && [[ $body == *"<title>Greenkeep</title>"* ]]; then
               echo "https://greenkeep.xyz is live"
               exit 0
             fi
