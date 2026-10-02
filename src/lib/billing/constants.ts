@@ -1,3 +1,9 @@
+/**
+ * Master switch for the RevenueCat paywall. `false` = free tool: server checks
+ * grant every entitlement and the client never initializes RevenueCat.
+ */
+export const BILLING_ENABLED = false;
+
 export const REVENUECAT_WRITE_ENTITLEMENT_ID = "pro";
 export const REVENUECAT_PREMIUM_ENTITLEMENT_ID = "premium";
 

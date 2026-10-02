@@ -37,6 +37,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GITHUB_PROVIDER_ID, authEnabled, signIn } from "@/lib/auth/client";
+import { BILLING_ENABLED } from "@/lib/billing/constants";
+import { AUTO_SYNC_ENABLED } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Landing });
@@ -149,14 +151,14 @@ function Landing() {
               <span className="inline-block size-2 rounded-full bg-emerald-500" />
             </Link>
             <div className="hidden items-center gap-5 text-sm text-muted-foreground md:flex">
+              <a href="#get-hired" className="transition-colors hover:text-foreground">
+                Get Hired
+              </a>
               <a href="#how-it-works" className="transition-colors hover:text-foreground">
                 How it works
               </a>
               <a href="#features" className="transition-colors hover:text-foreground">
                 Features
-              </a>
-              <a href="#get-hired" className="transition-colors hover:text-foreground">
-                Get Hired
               </a>
               <a href="#privacy" className="transition-colors hover:text-foreground">
                 Privacy
@@ -281,7 +283,7 @@ function Landing() {
                   <LockKeyhole className="size-3.5 text-emerald-500" />
                   Completely private repository
                 </span>
-                <span>Verified undetectable</span>
+                <span>Mirrors real work days only</span>
               </div>
               <div className="mt-3 grid grid-cols-1 items-start text-xs leading-relaxed text-muted-foreground [&>*]:col-start-1 [&>*]:row-start-1">
                 <p
@@ -319,284 +321,6 @@ function Landing() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 2: SUCCESS - "Kill buyer's remorse"
-          Job: Show this works and reduce post-click anxiety
-          ───────────────────────────────────────────────────────────── */}
-      <section className="border-y border-border bg-card/40 py-16 sm:py-20" id="how-it-works">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center">
-            <p className="font-mono text-xs font-semibold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-              Proven Outcome
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-              Reclaim years of engineering history in 90 seconds.
-            </h2>
-            <p className="mx-auto mt-3 max-w-[55ch] text-base text-muted-foreground">
-              A clean, verified mirror that runs for you on autopilot.
-            </p>
-          </div>
-
-          {/* 3-Column Metrics Snapshot */}
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="flex flex-col rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <ShieldCheck className="size-5" />
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">0 Lines</p>
-              <h3 className="mt-1 text-base font-semibold">Zero Code Transmitted</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Proprietary code is never read, stored, or copied. All mirrored activity consists of
-                empty, metadata-only contributions with backdated timestamps.
-              </p>
-            </div>
-
-            <div className="flex flex-col rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
-                <LockKeyhole className="size-5" />
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">100% Private</p>
-              <h3 className="mt-1 text-base font-semibold">Isolated Dedicated Repo</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Written exclusively to a private repository on your personal account. Your
-                employer&apos;s organization never receives a webhook, commit, or alert.
-              </p>
-            </div>
-
-            <div className="flex flex-col rounded-xl border border-border bg-card p-6 shadow-2xs sm:col-span-2 lg:col-span-1">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <Layers className="size-5" />
-              </div>
-              <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">8+ Sources</p>
-              <h3 className="mt-1 text-base font-semibold">Multi-Account Federation</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Consolidate previous employers, client contractor handles, and freelance accounts
-                into one seamless, unified timeline on your primary profile.
-              </p>
-            </div>
-          </div>
-
-          {/* Process Strip */}
-          <div className="mt-10 rounded-xl border border-border bg-card/70 p-5 sm:p-6">
-            <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:gap-6">
-              <div className="flex items-start gap-3.5">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  1
-                </span>
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground">Connect work handles</h4>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Enter the GitHub usernames whose contribution history you want to preserve.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="hidden items-center justify-center text-muted-foreground/70 md:flex"
-                aria-hidden="true"
-              >
-                <ArrowRight className="size-5 shrink-0" />
-              </div>
-              <div
-                className="flex items-center justify-center py-1 text-muted-foreground/50 md:hidden"
-                aria-hidden="true"
-              >
-                <ArrowDown className="size-4 shrink-0" />
-              </div>
-
-              <div className="flex items-start gap-3.5">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  2
-                </span>
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground">Preview merged graph</h4>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Inspect the merged heat-map, tune contrast curves, and pick your date window.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="hidden items-center justify-center text-muted-foreground/70 md:flex"
-                aria-hidden="true"
-              >
-                <ArrowRight className="size-5 shrink-0" />
-              </div>
-              <div
-                className="flex items-center justify-center py-1 text-muted-foreground/50 md:hidden"
-                aria-hidden="true"
-              >
-                <ArrowDown className="size-4 shrink-0" />
-              </div>
-
-              <div className="flex items-start gap-3.5">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  3
-                </span>
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground">
-                    Write once or sync daily
-                  </h4>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Push via cloud OAuth, download a standalone local shell script, or automate
-                    nightly.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 3: PROBLEM-AGITATE - "Make status quo painful"
-          Job: Increase motivation to change now (The Enterprise Black Hole)
-          ───────────────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="font-mono text-xs font-semibold tracking-wider uppercase text-destructive">
-              The Enterprise Profile Penalty
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-              You ship production code 40 hours a week. To recruiters, your GitHub looks abandoned.
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Corporate SSO creates an invisible wall between your daily output and your career
-              reputation.
-            </p>
-          </div>
-
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            <div className="rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div className="flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
-                <Briefcase className="size-4" />
-              </div>
-              <h3 className="mt-4 text-base font-semibold">The SSO Black Hole</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                You design distributed systems, resolve critical production incidents, and push code
-                daily. But it&apos;s all locked behind corporate enterprises and private orgs.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div className="flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
-                <Clock className="size-4" />
-              </div>
-              <h3 className="mt-4 text-base font-semibold">The Sudden Evaporation</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                The day you change jobs, your company switches SSO providers, or client contracts
-                end, that entire multi-year track record disappears overnight. You walk away with
-                zero public proof.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div className="flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
-                <UserX className="size-4" />
-              </div>
-              <h3 className="mt-4 text-base font-semibold">The Recruiter Filter</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Hiring managers reviewing hundreds of applicant resumes glance at your personal
-                GitHub, see 12 sparse contributions, and assume you haven&apos;t written code in
-                months.
-              </p>
-            </div>
-          </div>
-
-          {/* Cost of Inaction Callout Box */}
-          <div className="mx-auto mt-10 max-w-3xl rounded-xl border border-border/80 bg-muted/40 p-6">
-            <p className="font-mono text-xs font-semibold uppercase text-muted-foreground">
-              The Cost of Inaction
-            </p>
-            <blockquote className="mt-2 text-base leading-relaxed font-medium text-foreground italic">
-              &ldquo;Spending the first 10 minutes of every technical screen explaining: &apos;I
-              actually write code every single day, it&apos;s just on an internal corporate
-              GitLab/Enterprise account.&apos;&rdquo;
-            </blockquote>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 4: VALUE STACK - "Make saying no feel stupid"
-          Job: Increase perceived value versus price/effort (The Full Toolkit)
-          ───────────────────────────────────────────────────────────── */}
-      <section className="border-t border-border bg-card/40 py-16 sm:py-24" id="features">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center">
-            <p className="font-mono text-xs font-semibold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-              Full Toolkit
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-              Everything you need to keep your personal profile accurate.
-            </h2>
-            <p className="mx-auto mt-3 max-w-[62ch] text-base text-muted-foreground">
-              Engineered specifically for developers who demand clean git mechanics, realistic
-              contribution curves, and zero security compromises.
-            </p>
-          </div>
-
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div>
-                <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
-                  <GitBranch className="size-5" />
-                </div>
-                <h3 className="mt-4 text-base font-semibold">Multi-Account Aggregation</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Federate up to 8 GitHub identities. Merge history from current employers, past
-                  agencies, freelance accounts, and personal repos into one unified view.
-                </p>
-              </div>
-              <p className="mt-4 font-mono text-xs text-muted-foreground">Up to 8 handles</p>
-            </div>
-
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div>
-                <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
-                  <Sliders className="size-5" />
-                </div>
-                <h3 className="mt-4 text-base font-semibold">6 Intensity Curves</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Linear, Square Root, Balanced, Logarithmic, Accentuated, and Plateau. Prevent a
-                  single 80-commit rebase day from washing out the rest of your year.
-                </p>
-              </div>
-              <p className="mt-4 font-mono text-xs text-muted-foreground">Mathematical smoothing</p>
-            </div>
-
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div>
-                <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
-                  <Terminal className="size-5" />
-                </div>
-                <h3 className="mt-4 text-base font-semibold">Air-Gapped Bash Script</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Prefer not to grant OAuth write access? Download a self-contained shell script
-                  (macOS, Linux, Windows) and push empty commits locally from your own terminal.
-                </p>
-              </div>
-              <p className="mt-4 font-mono text-xs text-muted-foreground">Zero OAuth permissions</p>
-            </div>
-
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
-              <div>
-                <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
-                  <RefreshCw className="size-5" />
-                </div>
-                <h3 className="mt-4 text-base font-semibold">Automated Nightly Sync</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Set it once and stay green forever. Our background worker quietly checks your work
-                  handles daily and mirrors new work days automatically without lifting a finger.
-                </p>
-              </div>
-              <p className="mt-4 font-mono text-xs text-muted-foreground">24/7 background worker</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
           SECTION 5: SOCIAL PROOF - "Let others convince them"
           Job: Transfer trust from existing users / market reality
           ───────────────────────────────────────────────────────────── */}
@@ -604,15 +328,15 @@ function Landing() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
             <p className="font-mono text-xs font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
-              Market Reality
+              Why It Matters
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-              Hiring managers screen with their eyes first.
+              Consistency is a signal worth showing.
             </h2>
             <p className="mt-3 text-base text-muted-foreground">
-              GitHub grass isn&apos;t proof of code quality, it&apos;s a vanity metric. But
-              it&apos;s a fast visual heuristic that you actually build things, when recruiters
-              spend less than 30 seconds looking at your application.
+              Showing up and shipping every day is one of the clearest things an engineer can
+              demonstrate, and your contribution graph is where that consistency becomes visible.
+              Unless your daily work lives behind corporate SSO.
             </p>
           </div>
 
@@ -713,9 +437,296 @@ function Landing() {
           {/* Context Commentary */}
           <div className="mx-auto mt-8 max-w-xl text-center text-sm text-muted-foreground">
             <p>
-              In a sea of 500 applicant resumes for an engineering role, an active contribution
-              graph is the fastest visual proof that you write and ship software.
+              A graph like this tells the story of someone who builds every day. Greenkeep makes
+              sure your graph tells your whole story, including the work you ship at your day job.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 2: SUCCESS - "Kill buyer's remorse"
+          Job: Show this works and reduce post-click anxiety
+          ───────────────────────────────────────────────────────────── */}
+      <section className="border-y border-border bg-card/40 py-16 sm:py-20" id="how-it-works">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="text-center">
+            <p className="font-mono text-xs font-semibold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
+              Proven Outcome
+            </p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+              Reclaim years of engineering history in 90 seconds.
+            </h2>
+            <p className="mx-auto mt-3 max-w-[55ch] text-base text-muted-foreground">
+              A clean, verified mirror that runs for you on autopilot.
+            </p>
+          </div>
+
+          {/* 3-Column Metrics Snapshot */}
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="size-5" />
+              </div>
+              <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">0 Lines</p>
+              <h3 className="mt-1 text-base font-semibold">Zero Code Transmitted</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Proprietary code is never read, stored, or copied. All mirrored activity consists of
+                empty, metadata-only contributions dated to the days you actually worked.
+              </p>
+            </div>
+
+            <div className="flex flex-col rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <LockKeyhole className="size-5" />
+              </div>
+              <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">100% Private</p>
+              <h3 className="mt-1 text-base font-semibold">Isolated Dedicated Repo</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Written exclusively to a private repository on your personal account. Your
+                employer&apos;s organization never receives a webhook, commit, or alert.
+              </p>
+            </div>
+
+            <div className="flex flex-col rounded-xl border border-border bg-card p-6 shadow-2xs sm:col-span-2 lg:col-span-1">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Layers className="size-5" />
+              </div>
+              <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">8+ Sources</p>
+              <h3 className="mt-1 text-base font-semibold">Multi-Account Federation</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Consolidate previous employers, client contractor handles, and freelance accounts
+                into one seamless, unified timeline on your primary profile.
+              </p>
+            </div>
+          </div>
+
+          {/* Process Strip */}
+          <div className="mt-10 rounded-xl border border-border bg-card/70 p-5 sm:p-6">
+            <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:gap-6">
+              <div className="flex items-start gap-3.5">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  1
+                </span>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Connect work handles</h4>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Enter the GitHub usernames whose contribution history you want to preserve.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="hidden items-center justify-center text-muted-foreground/70 md:flex"
+                aria-hidden="true"
+              >
+                <ArrowRight className="size-5 shrink-0" />
+              </div>
+              <div
+                className="flex items-center justify-center py-1 text-muted-foreground/50 md:hidden"
+                aria-hidden="true"
+              >
+                <ArrowDown className="size-4 shrink-0" />
+              </div>
+
+              <div className="flex items-start gap-3.5">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  2
+                </span>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">Preview merged graph</h4>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Inspect the merged heat-map, tune contrast curves, and pick your date window.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="hidden items-center justify-center text-muted-foreground/70 md:flex"
+                aria-hidden="true"
+              >
+                <ArrowRight className="size-5 shrink-0" />
+              </div>
+              <div
+                className="flex items-center justify-center py-1 text-muted-foreground/50 md:hidden"
+                aria-hidden="true"
+              >
+                <ArrowDown className="size-4 shrink-0" />
+              </div>
+
+              <div className="flex items-start gap-3.5">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  3
+                </span>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {AUTO_SYNC_ENABLED ? "Write once or sync daily" : "Write your commits"}
+                  </h4>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Push via cloud OAuth or download a standalone local shell script
+                    {AUTO_SYNC_ENABLED ? ", or automate nightly." : "."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 3: PROBLEM-AGITATE - "Make status quo painful"
+          Job: Increase motivation to change now (The Enterprise Black Hole)
+          ───────────────────────────────────────────────────────────── */}
+      <section className="py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="font-mono text-xs font-semibold tracking-wider uppercase text-destructive">
+              The Enterprise Profile Penalty
+            </p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+              You ship production code 40 hours a week. To recruiters, your GitHub looks abandoned.
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Corporate SSO creates an invisible wall between your daily output and your career
+              reputation.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div className="flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
+                <Briefcase className="size-4" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold">The SSO Black Hole</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                You design distributed systems, resolve critical production incidents, and push code
+                daily. But it&apos;s all locked behind corporate enterprises and private orgs.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div className="flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
+                <Clock className="size-4" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold">The Sudden Evaporation</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                The day you change jobs, your company switches SSO providers, or client contracts
+                end, that entire multi-year track record disappears overnight. You walk away with
+                zero public proof.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div className="flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
+                <UserX className="size-4" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold">The Missing Signal</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Your GitHub profile is often the first place people look to see what you build. When
+                years of daily work never show up there, your profile undersells you.
+              </p>
+            </div>
+          </div>
+
+          {/* Cost of Inaction Callout Box */}
+          <div className="mx-auto mt-10 max-w-3xl rounded-xl border border-border/80 bg-muted/40 p-6">
+            <p className="font-mono text-xs font-semibold uppercase text-muted-foreground">
+              The Cost of Inaction
+            </p>
+            <blockquote className="mt-2 text-base leading-relaxed font-medium text-foreground italic">
+              &ldquo;Spending the first 10 minutes of every technical screen explaining: &apos;I
+              actually write code every single day, it&apos;s just on an internal corporate
+              GitLab/Enterprise account.&apos;&rdquo;
+            </blockquote>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 4: VALUE STACK - "Make saying no feel stupid"
+          Job: Increase perceived value versus price/effort (The Full Toolkit)
+          ───────────────────────────────────────────────────────────── */}
+      <section className="border-t border-border bg-card/40 py-16 sm:py-24" id="features">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="text-center">
+            <p className="font-mono text-xs font-semibold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
+              Full Toolkit
+            </p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+              Everything you need to keep your personal profile accurate.
+            </h2>
+            <p className="mx-auto mt-3 max-w-[62ch] text-base text-muted-foreground">
+              Engineered specifically for developers who demand clean git mechanics, realistic
+              contribution curves, and zero security compromises.
+            </p>
+          </div>
+
+          <div
+            className={cn(
+              "mt-14 grid gap-6 sm:grid-cols-2",
+              AUTO_SYNC_ENABLED ? "lg:grid-cols-4" : "lg:grid-cols-3",
+            )}
+          >
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div>
+                <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
+                  <GitBranch className="size-5" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold">Multi-Account Aggregation</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Federate up to 8 GitHub identities. Merge history from current employers, past
+                  agencies, freelance accounts, and personal repos into one unified view.
+                </p>
+              </div>
+              <p className="mt-4 font-mono text-xs text-muted-foreground">Up to 8 handles</p>
+            </div>
+
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div>
+                <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
+                  <Sliders className="size-5" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold">6 Intensity Curves</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Linear, Square Root, Balanced, Logarithmic, Accentuated, and Plateau. Prevent a
+                  single 80-commit rebase day from washing out the rest of your year.
+                </p>
+              </div>
+              <p className="mt-4 font-mono text-xs text-muted-foreground">Mathematical smoothing</p>
+            </div>
+
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
+              <div>
+                <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
+                  <Terminal className="size-5" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold">Air-Gapped Bash Script</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Prefer not to grant OAuth write access? Download a self-contained shell script
+                  (macOS, Linux, Windows) and push empty commits locally from your own terminal.
+                </p>
+              </div>
+              <p className="mt-4 font-mono text-xs text-muted-foreground">Zero OAuth permissions</p>
+            </div>
+
+            {AUTO_SYNC_ENABLED && (
+              <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-2xs">
+                <div>
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground">
+                    <RefreshCw className="size-5" />
+                  </div>
+                  <h3 className="mt-4 text-base font-semibold">Automated Nightly Sync</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Set it once and stay green forever. Our background worker quietly checks your
+                    work handles daily and mirrors new work days automatically without lifting a
+                    finger.
+                  </p>
+                </div>
+                <p className="mt-4 font-mono text-xs text-muted-foreground">
+                  24/7 background worker
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -800,7 +811,7 @@ function Landing() {
               <p className="mx-auto mt-1 text-sm font-medium text-foreground max-w-xl">
                 {activeTab === "after"
                   ? "“Consistent builder shipping daily production code. Strong work ethic and continuous momentum.”"
-                  : "“Does this guy even ship? Did they step away from technical work?”"}
+                  : "“Not much recent public activity. Hard to tell what they’ve been building.”"}
               </p>
             </div>
           </div>
@@ -920,16 +931,20 @@ function Landing() {
                     Bash Script Generator
                   </Link>
                 </li>
-                <li>
-                  <Link to="/app" className="transition hover:text-foreground">
-                    Automated Nightly Sync
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/app" className="transition hover:text-foreground">
-                    Lifetime &amp; Monthly Plans
-                  </Link>
-                </li>
+                {AUTO_SYNC_ENABLED && (
+                  <li>
+                    <Link to="/app" className="transition hover:text-foreground">
+                      Automated Nightly Sync
+                    </Link>
+                  </li>
+                )}
+                {BILLING_ENABLED && (
+                  <li>
+                    <Link to="/app" className="transition hover:text-foreground">
+                      Lifetime &amp; Monthly Plans
+                    </Link>
+                  </li>
+                )}
               </ul>
             </div>
 

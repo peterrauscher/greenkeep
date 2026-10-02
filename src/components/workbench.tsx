@@ -56,7 +56,12 @@ import {
 import type { PremiumSyncStatus } from "@/lib/premium-sync-store.server";
 import { cn } from "@/lib/utils";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { PAYMENT_REQUIRED_MESSAGE, PREMIUM_REQUIRED_MESSAGE } from "@/lib/billing/constants";
+import { AUTO_SYNC_ENABLED } from "@/lib/features";
+import {
+  BILLING_ENABLED,
+  PAYMENT_REQUIRED_MESSAGE,
+  PREMIUM_REQUIRED_MESSAGE,
+} from "@/lib/billing/constants";
 import { useRevenueCatAccess } from "@/lib/billing/use-revenuecat";
 
 const PREFS_KEY = "greenkeep-prefs";
@@ -244,7 +249,7 @@ export function Workbench() {
 
   const userId = user?.id ?? null;
   useEffect(() => {
-    if (!userId || user?.isDevFallback) {
+    if (!AUTO_SYNC_ENABLED || !userId || user?.isDevFallback) {
       setPremiumSync(null);
       return;
     }
@@ -893,116 +898,120 @@ export function Workbench() {
             </Button>
           </div>
 
-          <section className="rounded-xl bg-card p-4 ring-1 ring-border sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="max-w-2xl">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-2xs font-medium uppercase tracking-wider">
-                    <Crown className="size-3.5" />
-                    Premium
-                  </span>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {writeAccess.premiumProduct?.price ?? "$4.99"}/month
-                  </span>
+          {AUTO_SYNC_ENABLED && (
+            <section className="rounded-xl bg-card p-4 ring-1 ring-border sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="max-w-2xl">
+                  {BILLING_ENABLED && (
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-2xs font-medium uppercase tracking-wider">
+                        <Crown className="size-3.5" />
+                        Premium
+                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {writeAccess.premiumProduct?.price ?? "$4.99"}/month
+                      </span>
+                    </div>
+                  )}
+                  <h2 className="text-base font-medium">Keep your graph synced automatically</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Greenkeep checks the saved work accounts daily and adds only the commits that
+                    are still missing.{BILLING_ENABLED && " Premium includes manual writes too."}
+                  </p>
                 </div>
-                <h2 className="text-base font-medium">Keep your graph synced automatically</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Greenkeep checks the saved work accounts daily and adds only the commits that are
-                  still missing. Premium includes manual writes too.
-                </p>
+
+                {premiumSync?.enabled ? (
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs text-graph-4">
+                    <span className="size-1.5 rounded-full bg-current" />
+                    Daily sync active
+                  </span>
+                ) : premiumSync ? (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {premiumSync.disabledReason === "subscription"
+                      ? "Paused · subscription inactive"
+                      : "Paused"}
+                  </span>
+                ) : null}
               </div>
 
-              {premiumSync?.enabled ? (
-                <span className="flex shrink-0 items-center gap-1.5 text-xs text-graph-4">
-                  <span className="size-1.5 rounded-full bg-current" />
-                  Daily sync active
-                </span>
-              ) : premiumSync ? (
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {premiumSync.disabledReason === "subscription"
-                    ? "Paused · subscription inactive"
-                    : "Paused"}
-                </span>
-              ) : null}
-            </div>
-
-            {premiumSync && (
-              <div className="mt-4 grid gap-3 rounded-lg bg-muted p-3 text-xs sm:grid-cols-3">
-                <div>
-                  <p className="text-2xs uppercase tracking-wider text-muted-foreground">
-                    Last run
-                  </p>
-                  <p className="mt-1 font-mono">
-                    {formatSyncTimestamp(premiumSync.lastCompletedAt)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xs uppercase tracking-wider text-muted-foreground">
-                    Next run
-                  </p>
-                  <p className="mt-1 font-mono">
-                    {premiumSync.enabled ? formatSyncTimestamp(premiumSync.nextSyncAt) : "Paused"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xs uppercase tracking-wider text-muted-foreground">
-                    Tracked commits
-                  </p>
-                  <p className="mt-1 font-mono">{premiumSync.copiedCommits.toLocaleString()}</p>
-                </div>
-              </div>
-            )}
-
-            {premiumSync?.lastError && (
-              <p className="mt-3 text-xs text-destructive">{premiumSync.lastError}</p>
-            )}
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button type="button" onClick={requestAutomaticSync} disabled={syncSaving}>
-                {syncSaving ? (
-                  <LoaderCircle className="animate-spin" />
-                ) : writeAccess.hasPremiumAccess ? (
-                  <Check />
-                ) : (
-                  <Crown />
-                )}
-                {premiumSync?.enabled
-                  ? "Update automatic sync"
-                  : premiumSync && sources.length === 0
-                    ? "Resume automatic sync"
-                    : writeAccess.hasPremiumAccess
-                      ? "Enable automatic sync"
-                      : `Get Premium · ${writeAccess.premiumProduct?.price ?? "$4.99"}/month`}
-              </Button>
               {premiumSync && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void refreshAutomaticSync()}
-                  disabled={syncStatusLoading}
-                >
-                  <RefreshCw className={cn(syncStatusLoading && "animate-spin")} />
-                  Refresh status
-                </Button>
+                <div className="mt-4 grid gap-3 rounded-lg bg-muted p-3 text-xs sm:grid-cols-3">
+                  <div>
+                    <p className="text-2xs uppercase tracking-wider text-muted-foreground">
+                      Last run
+                    </p>
+                    <p className="mt-1 font-mono">
+                      {formatSyncTimestamp(premiumSync.lastCompletedAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wider text-muted-foreground">
+                      Next run
+                    </p>
+                    <p className="mt-1 font-mono">
+                      {premiumSync.enabled ? formatSyncTimestamp(premiumSync.nextSyncAt) : "Paused"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wider text-muted-foreground">
+                      Tracked commits
+                    </p>
+                    <p className="mt-1 font-mono">{premiumSync.copiedCommits.toLocaleString()}</p>
+                  </div>
+                </div>
               )}
-              {premiumSync?.enabled && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void disableAutomaticSync()}
-                  disabled={syncSaving}
-                >
-                  Pause
-                </Button>
+
+              {premiumSync?.lastError && (
+                <p className="mt-3 text-xs text-destructive">{premiumSync.lastError}</p>
               )}
-            </div>
-            <p className="mt-3 text-2xs text-muted-foreground">
-              Saving uses the current work accounts, From date, intensity, repository, and commit
-              email. The first run starts immediately; later runs happen every 24 hours.
-            </p>
-          </section>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button type="button" onClick={requestAutomaticSync} disabled={syncSaving}>
+                  {syncSaving ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : writeAccess.hasPremiumAccess ? (
+                    <Check />
+                  ) : (
+                    <Crown />
+                  )}
+                  {premiumSync?.enabled
+                    ? "Update automatic sync"
+                    : premiumSync && sources.length === 0
+                      ? "Resume automatic sync"
+                      : writeAccess.hasPremiumAccess
+                        ? "Enable automatic sync"
+                        : `Get Premium · ${writeAccess.premiumProduct?.price ?? "$4.99"}/month`}
+                </Button>
+                {premiumSync && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void refreshAutomaticSync()}
+                    disabled={syncStatusLoading}
+                  >
+                    <RefreshCw className={cn(syncStatusLoading && "animate-spin")} />
+                    Refresh status
+                  </Button>
+                )}
+                {premiumSync?.enabled && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void disableAutomaticSync()}
+                    disabled={syncSaving}
+                  >
+                    Pause
+                  </Button>
+                )}
+              </div>
+              <p className="mt-3 text-2xs text-muted-foreground">
+                Saving uses the current work accounts, From date, intensity, repository, and commit
+                email. The first run starts immediately; later runs happen every 24 hours.
+              </p>
+            </section>
+          )}
 
           <section className="flex flex-col gap-5">
             <h2 className="text-sm font-medium">Additional settings</h2>
