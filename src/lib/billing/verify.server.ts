@@ -1,5 +1,6 @@
 import { hasAnyRevenueCatEntitlement } from "../../../scripts/revenuecat-access.mjs";
 import {
+  BILLING_ENABLED,
   BILLING_UNAVAILABLE_MESSAGE,
   PAYMENT_REQUIRED_MESSAGE,
   PREMIUM_REQUIRED_MESSAGE,
@@ -53,6 +54,8 @@ function rememberGranted(accessKey: string, now: number): void {
 }
 
 async function hasRequiredEntitlement(userId: string, entitlementIds: string[]): Promise<boolean> {
+  if (!BILLING_ENABLED) return true;
+
   const now = Date.now();
   const accessKey = `${userId}:${entitlementIds.join(",")}`;
   if ((grantedUntilByAccess.get(accessKey) ?? 0) > now) return true;

@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Move a work GitHub contribution graph onto your personal account. Greenkeep writes empty, backdated commits to a private repo so the squares come with you.",
+          "Move a work GitHub contribution graph onto your personal account. Greenkeep writes empty commits dated to the days you actually worked, in a private repo, so the squares come with you.",
       },
       { name: "theme-color", content: "#f3f4f3" },
     ],

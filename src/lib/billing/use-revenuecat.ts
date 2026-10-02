@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Purchases } from "@revenuecat/purchases-js";
 import type { CustomerInfo, Package as RevenueCatPackage } from "@revenuecat/purchases-js";
-import { REVENUECAT_PREMIUM_ENTITLEMENT_ID, REVENUECAT_WRITE_ENTITLEMENT_ID } from "./constants";
+import {
+  BILLING_ENABLED,
+  REVENUECAT_PREMIUM_ENTITLEMENT_ID,
+  REVENUECAT_WRITE_ENTITLEMENT_ID,
+} from "./constants";
 
 export type RevenueCatAccessStatus = "loading" | "ready" | "unavailable" | "error";
 export type RevenueCatPlan = "lifetime" | "premium";
@@ -41,6 +45,15 @@ type Snapshot = RevenueCatGrants & {
 
 const publicApiKey = (import.meta.env.VITE_REVENUECAT_WEB_API_KEY ?? "").trim();
 const noGrants: RevenueCatGrants = { hasWriteAccess: false, hasPremiumAccess: false };
+const allGrants: RevenueCatGrants = { hasWriteAccess: true, hasPremiumAccess: true };
+const freeSnapshot: Snapshot = {
+  ...allGrants,
+  status: "ready",
+  lifetimeProduct: null,
+  premiumProduct: null,
+  managementUrl: null,
+  error: null,
+};
 let purchasesQueue: Promise<Purchases | null> = Promise.resolve(null);
 
 function unavailableSnapshot(message: string): Snapshot {
@@ -141,14 +154,16 @@ export function useRevenueCatAccess(
   appUserId: string | null,
   customerEmail: string | null,
 ): RevenueCatAccess {
-  const [snapshot, setSnapshot] = useState<Snapshot>(() =>
-    publicApiKey
+  const [snapshot, setSnapshot] = useState<Snapshot>(() => {
+    if (!BILLING_ENABLED) return freeSnapshot;
+    return publicApiKey
       ? errorSnapshot("Sign in to check purchase access.")
-      : unavailableSnapshot("Payments are not configured yet."),
-  );
+      : unavailableSnapshot("Payments are not configured yet.");
+  });
   const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
+    if (!BILLING_ENABLED) return;
     if (!publicApiKey) {
       setSnapshot(unavailableSnapshot("Payments are not configured yet."));
       return;
@@ -180,6 +195,7 @@ export function useRevenueCatAccess(
   }, [appUserId]);
 
   const refresh = useCallback(async (): Promise<RevenueCatGrants> => {
+    if (!BILLING_ENABLED) return allGrants;
     if (!publicApiKey || !appUserId) return noGrants;
     setIsBusy(true);
     setSnapshot((current) => ({ ...current, error: null }));
